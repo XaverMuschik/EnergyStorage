@@ -1,5 +1,5 @@
 import gym
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.layers import Activation
 from tensorflow.keras.layers import Dense
@@ -20,7 +20,7 @@ class Agent:
             The game environment
         """
         self.env = env
-        self.observations = self.env.observation_space.shape[0]
+        self.observations = self.env.observation_space
         self.actions = self.env.action_space.n
         self.model = self.get_model()
 

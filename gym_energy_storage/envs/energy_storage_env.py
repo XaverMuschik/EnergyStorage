@@ -22,7 +22,9 @@ class EnergyStorageEnv(gym.Env):
 		self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
 		self.cur_date = self.start_date  # keep track of current date
 		self._get_spot_price_params()  # might be necessary to specify path here?
-	
+		self.observation_space = 4
+		self.action_space = ["up", "down", "cons"]
+
 		# storage specifics
 		self.max_stor_lev = 0.005  # in MWh
 		self.max_wd = -0.0024  # in MW
@@ -33,7 +35,7 @@ class EnergyStorageEnv(gym.Env):
 		self.stor_lev = 0.0
 		self.stor_val = 0.0
 		self.cur_price = self.mean_std.loc[(self.mean_std["year"] == self.start_date.year) & (self.mean_std["month"] == self.start_date.month), "Mean"][0]
-		self.cum_reward = 0.0
+		# self.cum_reward = 0.0
 
 	def _get_spot_price_params(self) -> None:
 	
@@ -159,14 +161,18 @@ class EnergyStorageEnv(gym.Env):
 
 		# calculate reward
 		reward = - num_action * self.cur_price
-		self.cum_reward += reward
+		# self.cum_reward += reward
 
 		# generate list from observations for returning them to the agent
 		observations = [self.cur_date.year, self.cur_date.month, self.cur_price, self.stor_lev, self.stor_val]
 
-		return observations, reward, False, self.cum_reward
+		return observations, reward, False, {}  # self.cum_reward
 
 	def reset(self):
+
+		# reset cur_date to start_date
+		self.cur_date = self.start_date
+
 		# set storage level to zero
 		self.stor_lev = 0.0
 
@@ -177,7 +183,10 @@ class EnergyStorageEnv(gym.Env):
 		self.cur_price = self.mean_std.loc[(self.mean_std["year"] == self.start_date.year) & (self.mean_std["month"] == self.start_date.month), "Mean"][0]
 
 		# set cum_reward to zero
-		self.cum_reward = 0.0
+		# self.cum_reward = 0.0
+
+		observations = [self.cur_date.year, self.cur_date.month, self.cur_price, self.stor_lev, self.stor_val]
+		return observations
 
 	def render(self, mode: str = "human", close: bool = False) -> None:
 		return None
