@@ -66,8 +66,8 @@ class EnergyStorageEnv(gym.Env):
 		else:
 			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_neg_jump / 100)
 			jump = - (jump_occurrence * np.random.exponential(self.exp_jump_distr, 1))
-		print(f"Jump stattgefunden: {jump_occurrence}")
-		print(f"Jump size: {jump}")
+		#print(f"Jump stattgefunden: {jump_occurrence}")
+		#print(f"Jump size: {jump}")
 		return jump
 
 	def _next_price(self) -> None:
@@ -80,18 +80,18 @@ class EnergyStorageEnv(gym.Env):
 
 		mean = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean"][0]
 		std = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std"][0]
-		print(f"Mean: {mean}")
-		print(f"std: {std}")
+		#print(f"Mean: {mean}")
+		#print(f"std: {std}")
 
 
 		# generate noise
 		noise = np.random.normal(loc=0, scale=std, size=1)
-		print(f"Noise: {noise}")
+		#print(f"Noise: {noise}")
 
 		jump = self._generate_jump(mean)
 
 		price_inc = self.est_mean_rev * (mean - self.cur_price) + noise + jump
-		print(f"price inc {price_inc}")
+		#print(f"price inc {price_inc}")
 		# the price process was estimated on hourly data
 		# as price increments are hourly, the "dt" part is set to one
 
