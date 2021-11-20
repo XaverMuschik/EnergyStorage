@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from datetime import timedelta
-
+import os
 
 class EnergyStorageEnv(gym.Env):
 
@@ -22,7 +22,7 @@ class EnergyStorageEnv(gym.Env):
 		self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
 		self.cur_date = self.start_date  # keep track of current date
 		self._get_spot_price_params()  # might be necessary to specify path here?
-		self.observation_space = 4
+		self.observation_space = 5
 		self.action_space = ["up", "down", "cons"]
 
 		# storage specifics
@@ -34,7 +34,7 @@ class EnergyStorageEnv(gym.Env):
 		# set initial parameters for price, storage level, storage value, and cumulative reward
 		self.stor_lev = 0.0
 		self.stor_val = 0.0
-		self.cur_price = self.mean_std.loc[(self.mean_std["year"] == self.start_date.year) & (self.mean_std["month"] == self.start_date.month), "Mean"][0]
+		self.cur_price = float(self.mean_std.loc[(self.mean_std["year"] == self.start_date.year) & (self.mean_std["month"] == self.start_date.month), "Mean"][0])
 		# self.cum_reward = 0.0
 
 	def _get_spot_price_params(self) -> None:
@@ -44,7 +44,8 @@ class EnergyStorageEnv(gym.Env):
 		"""
 		
 		# import json file as a dictionary
-		with open('power_price_model.json') as f:
+		file = os.path.join("envs", "power_price_model.json")
+		with open(file) as f:
 			d = json.load(f)
 		
 		# set individual price parameters
@@ -80,20 +81,20 @@ class EnergyStorageEnv(gym.Env):
 		month = self.cur_date.month
 		year = self.cur_date.year
 
-		mean = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean"][0]
-		std = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std"][0]
+		mean = float(self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean"])
+		std = float(self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std"])
 		#print(f"Mean: {mean}")
 		#print(f"std: {std}")
 
 
 		# generate noise
 		noise = np.random.normal(loc=0, scale=std, size=1)
-		#print(f"Noise: {noise}")
+		# print(f"Noise: {noise}")
 
 		jump = self._generate_jump(mean)
 
-		price_inc = self.est_mean_rev * (mean - self.cur_price) + noise + jump
-		#print(f"price inc {price_inc}")
+		price_inc = float(self.est_mean_rev * (mean - self.cur_price) + noise + jump)
+		# print(f"price inc {price_inc}")
 		# the price process was estimated on hourly data
 		# as price increments are hourly, the "dt" part is set to one
 
@@ -166,7 +167,12 @@ class EnergyStorageEnv(gym.Env):
 		# generate list from observations for returning them to the agent
 		observations = [self.cur_date.year, self.cur_date.month, self.cur_price, self.stor_lev, self.stor_val]
 
-		return observations, reward, False, {}  # self.cum_reward
+		if ((self.cur_date.year == 2016) & (self.cur_date.month == 1)):
+			drop = True
+		else:
+			drop = False
+
+		return observations, reward, drop, {}  # self.cum_reward
 
 	def reset(self):
 

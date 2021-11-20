@@ -1,4 +1,4 @@
-datetime
 gym
-numpy
+datetime
 pandas
+numpy

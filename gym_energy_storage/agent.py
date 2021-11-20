@@ -1,4 +1,5 @@
 import gym
+import gym_energy_storage
 # import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.layers import Activation
@@ -21,7 +22,7 @@ class Agent:
         """
         self.env = env
         self.observations = self.env.observation_space
-        self.actions = self.env.action_space.n
+        self.actions = len(self.env.action_space)
         self.model = self.get_model()
 
     def get_model(self):
@@ -41,7 +42,7 @@ class Agent:
 
     def get_action(self, state: np.ndarray):
         """Based on the state, get an action."""
-        state = state.reshape(1, -1)  # [4,] => [1, 4]
+        state = np.asarray(state).reshape(1, -1)  # [4,] => [1, 4]
         action = self.model(state).numpy()[0]
         action = np.random.choice(self.actions, p=action)  # choice([0, 1], [0.5044534  0.49554658])
         return action
@@ -85,14 +86,17 @@ class Agent:
         """Play games and train the NN."""
         for iteration in range(num_iterations):
             rewards, episodes = self.get_samples(num_episodes)
+            print("filter episodes")
             x_train, y_train, reward_bound = self.filter_episodes(rewards, episodes, percentile)
+            print("fitting model")
             self.model.fit(x=x_train, y=y_train, verbose=0)
+            print("model fitted")
             reward_mean = np.mean(rewards)
             print(f"Reward mean: {reward_mean}, reward bound: {reward_bound}")
             if reward_mean > 500:
                 break
 
-    def play(self, num_episodes: int, render: bool = True):
+    def play(self, num_episodes: int, render: bool = False):
         """Test the trained agent."""
         for episode in range(num_episodes):
             state = self.env.reset()
@@ -111,7 +115,7 @@ class Agent:
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
     agent = Agent(env)
-    print(agent.observations)
-    print(agent.actions)
+    # print(agent.observations)
+    # print(agent.actions)
     agent.train(percentile=70.0, num_iterations=15, num_episodes=100)
     agent.play(num_episodes=10)
