@@ -61,11 +61,13 @@ class EnergyStorageEnv(gym.Env):
 
 	def _generate_jump(self, mean):
 		if mean > self.cur_price:
-			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_pos_jump)
+			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_pos_jump / 100)
 			jump = jump_occurrence * np.random.exponential(self.exp_jump_distr, 1)
 		else:
-			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_neg_jump)
-			jump = - jump_occurrence * np.random.exponential(self.exp_jump_distr, 1)
+			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_neg_jump / 100)
+			jump = - (jump_occurrence * np.random.exponential(self.exp_jump_distr, 1))
+		print(f"Jump stattgefunden: {jump_occurrence}")
+		print(f"Jump size: {jump}")
 		return jump
 
 	def _next_price(self) -> None:
@@ -78,13 +80,18 @@ class EnergyStorageEnv(gym.Env):
 
 		mean = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean"][0]
 		std = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std"][0]
+		print(f"Mean: {mean}")
+		print(f"std: {std}")
+
 
 		# generate noise
 		noise = np.random.normal(loc=0, scale=std, size=1)
+		print(f"Noise: {noise}")
 
 		jump = self._generate_jump(mean)
 
-		price_inc = self.cur_price + self.est_mean_rev * (mean - self.cur_price) + noise + jump
+		price_inc = self.est_mean_rev * (mean - self.cur_price) + noise + jump
+		print(f"price inc {price_inc}")
 		# the price process was estimated on hourly data
 		# as price increments are hourly, the "dt" part is set to one
 
@@ -104,7 +111,7 @@ class EnergyStorageEnv(gym.Env):
 			num_action = 0
 
 		# calculate new storage level after action
-		new_stor_lev = self.stor_lev + num_action
+		new_stor_lev = self.stor_lev + self.stor_eff * num_action
 
 		return num_action, new_stor_lev
 
@@ -141,23 +148,23 @@ class EnergyStorageEnv(gym.Env):
 
 		num_action, new_stor_lev = self._storage_level_change(action)
 
-		# update storage level
-		self.stor_lev = new_stor_lev
-
 		# update storage value
 		self._update_stor_val(num_action)
+
+		# update storage level
+		self.stor_lev = new_stor_lev
 
 		# update current price after the action was taken
 		self._next_price()
 
 		# calculate reward
-		reward = num_action * self.cur_price
+		reward = - num_action * self.cur_price
 		self.cum_reward += reward
 
 		# generate list from observations for returning them to the agent
 		observations = [self.cur_date.year, self.cur_date.month, self.cur_price, self.stor_lev, self.stor_val]
 
-		return observations, reward, self.cum_reward
+		return observations, reward, False, self.cum_reward
 
 	def reset(self):
 		# set storage level to zero
@@ -177,3 +184,10 @@ class EnergyStorageEnv(gym.Env):
 
 	def close(self):
 		pass
+
+if __name__ == "__main__":
+	import gym
+	import gym_energy_storage
+	env = gym.make('energy_storage-v0')
+	env.reset()
+	env.step("up")
