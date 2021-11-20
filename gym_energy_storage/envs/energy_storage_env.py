@@ -1,11 +1,12 @@
 import gym
-from gym import error, spaces, utils
-from gym.utils import seeding
+# from gym import error, spaces, utils
+# from gym.utils import seeding
 import json
 import pandas as pd
 import numpy as np
 from datetime import datetime
 from datetime import timedelta
+
 
 class EnergyStorageEnv(gym.Env):
 
@@ -18,82 +19,83 @@ class EnergyStorageEnv(gym.Env):
 
 	def __init__(self, start_date: str) -> None:
 
-		self.start_date = datetime.fromisoformat(start_date)	# relevant for price simulation
-		self.cur_date = self.start_date	# keep track of current date
-		self._get_spot_price_params()	# might be necessary to specify path here?
+		self.start_date = datetime.fromisoformat(start_date)  # relevant for price simulation
+		self.cur_date = self.start_date  # keep track of current date
+		self._get_spot_price_params()  # might be necessary to specify path here?
 	
 		# storage specifics
-		self.max_stor_lev = 0.005	# in MWh
-		self.max_wd = -0.0024 	# in MW
-		self.max_in = 0.00165 	# in MW
-		self.stor_eff = 0.9 	# 10% loss for each conversion
-	  	
+		self.max_stor_lev = 0.005  # in MWh
+		self.max_wd = -0.0024  # in MW
+		self.max_in = 0.00165  # in MW
+		self.stor_eff = 0.9  # 10% loss for each conversion
+		
 		# set initial parameters for price, storage level, storage value, and cumulative reward
 		self.stor_lev = 0.0
 		self.stor_val = 0.0
-		self.cur_price = self.mean_std.loc[(self.mean_std["year"] == self.start_date.year) & (self.mean_std["month"] == self.start_date.month), "Mean")[0]
+		self.cur_price = self.mean_std.loc[(self.mean_std["year"] == self.start_date.year) & (self.mean_std["month"] == self.start_date.month), "Mean"][0]
 		self.cum_reward = 0.0
-    	
+
 	def _get_spot_price_params(self) -> None:
 	
 		""" this function imports the price parameters from a json file "power_price_model.json"
-	    	which is part of the package and to be supplied by the user of the environment
+			which is part of the package and to be supplied by the user of the environment
 		"""
-	  
+		
 		# import json file as a dictionary
 		with open('power_price_model.json') as f:
 			d = json.load(f)
-    		
+		
 		# set individual price parameters
 		self.prob_neg_jump = d["Prob.Neg.Jump"]
 		self.prob_pos_jump = d["Prob.Pos.Jump"]
-		self.exp_jump_distr = d["Exp.Jump.Distr"] # lambda parameter of jump distribution
+		self.exp_jump_distr = d["Exp.Jump.Distr"]  # lambda parameter of jump distribution
 		self.est_mean_rev = d["Est.Mean.Rev"]
 		self.est_mean = pd.DataFrame(d["Est.Mean"])
 		self.est_mean["year"] = self.est_mean["year"].astype(int)
 		self.est_mean["month"] = self.est_mean["month"].astype(int)
 		self.est_std = pd.DataFrame(d["Est.Std"])
 		self.est_std["month"] = self.est_std["month"].astype(int)
-  	
+
 		# merge average vola to mean price
 		self.mean_std = self.est_mean.merge(self.est_std, on="month")
 
 	def _generate_jump(self, mean):
 		if mean > self.cur_price:
-			jump_occurance = (np.random.uniform(0,1,1) <= self.prob_pos_jump)
-			jump = jump_occurance * np.random.exponential(scale=self.exp_jump_distr, 1)
+			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_pos_jump)
+			jump = jump_occurrence * np.random.exponential(self.exp_jump_distr, 1)
 		else:
-			jump_occurance = (np.random.uniform(0,1,1) <= self.prob_neg_jump)
-			jump = - jump_occurance * np.random.exponential(scale=self.exp_jump_distr, 1)
+			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_neg_jump)
+			jump = - jump_occurrence * np.random.exponential(self.exp_jump_distr, 1)
 		return jump
 
 	def _next_price(self) -> None:
 		""" simulate next price increment and update current date
 		"""
-  	
+
 		# get mean and std of current month
 		month = self.cur_date.month
 		year = self.cur_date.year
-  	
-		mean = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean")[0]
-		std = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std")[0]
-  	
+
+		mean = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean"][0]
+		std = self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std"][0]
+
 		# generate noise
 		noise = np.random.normal(loc=0, scale=std, size=1)
 
 		jump = self._generate_jump(mean)
-  	
+
 		price_inc = self.cur_price + self.est_mean_rev * (mean - self.cur_price) + noise + jump
-			# the price process was estimated on hourly data
-			# as price increments are hourly, the "dt" part is set to one
-  	
-  		# update observations
+		# the price process was estimated on hourly data
+		# as price increments are hourly, the "dt" part is set to one
+
+		# update observations
 		self.cur_price += price_inc
 		self.cur_date += timedelta(hours=1)
-  	  	
+
 	def _storage_level_change(self, action):
 		""" this function transforms the discrete action into a change in the level of the storage
-  		"""
+		"""
+		
 		if action == "up":
 			num_action = min(self.max_in, (self.max_stor_lev - self.stor_lev))
 		elif action == "down":
@@ -111,48 +113,47 @@ class EnergyStorageEnv(gym.Env):
 		"""
 		if num_action > 0.0:
 			self.stor_val = (self.stor_val * self.stor_lev + num_action * self.cur_price) / (self.stor_lev + num_action)
-  
-  
+
 	def step(self, action):
-  
+
 		"""
 		The agent takes a step in the environment.
-        
-        Parameters
-        ----------
-        action : change in storage level [up, down, no_action] 
-        	 (bang-bang property of these kind of problems well known, 
-        	  hence discretization possible)
-        
-        Returns
-        -------
-        ob, reward, episode_over
-            ob : List[float]
-                an environment-specific object representing your observation of
-                the environment.
-            reward : float
-                amount of reward achieved by the previous action. The scale
-                varies between environments, but the goal is always to increase
-                your total reward.
-        """
-	
+
+		Parameters
+		----------
+		action : change in storage level [up, down, no_action] 
+				(bang-bang property of these kind of problems well known, 
+				hence discretization possible)
+
+		Returns
+		-------
+		ob, reward, episode_over
+			ob : List[float]
+				an environment-specific object representing your observation of
+				the environment.
+			reward : float
+				amount of reward achieved by the previous action. The scale
+				varies between environments, but the goal is always to increase
+				your total reward.
+		"""
+		
 		# update observations
-  		
+
 		num_action, new_stor_lev = self._storage_level_change(action)
-  		
+
 		# update storage level
 		self.stor_lev = new_stor_lev
-  		
+
 		# update storage value
-  		self._update_stor_val(num_action)
-  		
+		self._update_stor_val(num_action)
+
 		# update current price after the action was taken
 		self._next_price()
-    		
+
 		# calculate reward
 		reward = num_action * self.cur_price
 		self.cum_reward += reward
-    		
+
 		# generate list from observations for returning them to the agent
 		observations = [self.cur_date.year, self.cur_date.month, self.cur_price, self.stor_lev, self.stor_val]
 
@@ -161,18 +162,18 @@ class EnergyStorageEnv(gym.Env):
 	def reset(self):
 		# set storage level to zero
 		self.stor_lev = 0.0
-  	
+
 		# set storage value to zero
 		self.stor_val = 0.0
-  	
+
 		# set price to initial price
-		self.cur_price = self.mean_std.loc[(self.mean_std["year"] == self.start_date.year) & (self.mean_std["month"] == self.start_date.month), "Mean")[0]
-    	
+		self.cur_price = self.mean_std.loc[(self.mean_std["year"] == self.start_date.year) & (self.mean_std["month"] == self.start_date.month), "Mean"][0]
+
 		# set cum_reward to zero
 		self.cum_reward = 0.0
-    	
+
 	def render(self, mode: str = "human", close: bool = False) -> None:
 		return None
-     	
+
 	def close(self):
 		pass
