@@ -17,9 +17,9 @@ class EnergyStorageEnv(gym.Env):
 
 	metadata = {'render.modes': ['human']}
 
-	def __init__(self, start_date: str) -> None:
+	def __init__(self):
 
-		self.start_date = datetime.fromisoformat(start_date)  # relevant for price simulation
+		self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
 		self.cur_date = self.start_date  # keep track of current date
 		self._get_spot_price_params()  # might be necessary to specify path here?
 	
