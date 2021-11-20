@@ -8,6 +8,14 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
+import os
+import tensorflow as tf
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+
+if tf.test.gpu_device_name():
+    print('GPU found')
+else:
+    print("No GPU found")
 
 class Agent:
     """Agent class for the cross-entropy learning algorithm."""
