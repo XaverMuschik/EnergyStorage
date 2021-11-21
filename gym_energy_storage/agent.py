@@ -17,6 +17,9 @@ if tf.test.gpu_device_name():
 else:
     print("No GPU found")
 
+import time
+
+
 class Agent:
     """Agent class for the cross-entropy learning algorithm."""
 
@@ -61,6 +64,8 @@ class Agent:
         episodes = [[] for i in range(num_episodes)]
 
         for episode in range(num_episodes):
+            # start = time.time()
+
             state = self.env.reset()
             total_reward = 0.0
 
@@ -73,6 +78,8 @@ class Agent:
                 if done:
                     rewards[episode] = total_reward
                     break
+            # end = time.time()
+            # print(f"time elapsed: {end - start}")
 
         return rewards, episodes
 
@@ -125,5 +132,7 @@ if __name__ == "__main__":
     agent = Agent(env)
     # print(agent.observations)
     # print(agent.actions)
-    agent.train(percentile=70.0, num_iterations=15, num_episodes=100)
-    agent.play(num_episodes=10)
+    # agent.train(percentile=70.0, num_iterations=3, num_episodes=10)
+    # agent.play(num_episodes=10)
+    import cProfile
+    cProfile.run("agent.get_samples(1)")

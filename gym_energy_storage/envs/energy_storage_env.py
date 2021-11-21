@@ -45,6 +45,7 @@ class EnergyStorageEnv(gym.Env):
 		
 		# import json file as a dictionary
 		file = os.path.join("envs", "power_price_model.json")
+		# file = "power_price_model.json"
 		with open(file) as f:
 			d = json.load(f)
 		
@@ -85,7 +86,6 @@ class EnergyStorageEnv(gym.Env):
 		std = float(self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std"])
 		#print(f"Mean: {mean}")
 		#print(f"std: {std}")
-
 
 		# generate noise
 		noise = np.random.normal(loc=0, scale=std, size=1)
@@ -202,7 +202,9 @@ class EnergyStorageEnv(gym.Env):
 
 if __name__ == "__main__":
 	import gym
+	# import cProfile
 	import gym_energy_storage
 	env = gym.make('energy_storage-v0')
 	env.reset()
-	env.step("up")
+
+	# cProfile.run('env.next_price')
