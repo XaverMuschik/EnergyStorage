@@ -35,6 +35,7 @@ class Agent:
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
         self.model = self.get_model()
+        self.epsilon = 0.1
 
     def get_model(self):
         """Returns a keras NN model."""
@@ -55,7 +56,10 @@ class Agent:
         """Based on the state, get an action."""
         state = np.asarray(state).reshape(1, -1)  # [4,] => [1, 4]
         action = self.model(state).numpy()[0]
-        action = np.random.choice(self.actions, p=action)  # choice([0, 1], [0.5044534  0.49554658])
+        if max(action) > (1 - self.epsilon):
+            action += self.epsilon / 2
+            action[np.argmax(action)] -= 1.5 * self.epsilon
+        action = np.random.choice(env.action_space, p=action)  # choice([0, 1], [0.5044534  0.49554658])
         return action
 
     def get_samples(self, num_episodes: int):
@@ -91,6 +95,15 @@ class Agent:
             if reward >= reward_bound:
                 observation = [step[0] for step in episode]
                 action = [step[1] for step in episode]
+                def _categorize_actions(x):
+                    """ uses same order as env.action_space has """
+                    if x == 'up':
+                        return 0
+                    elif x == 'down':
+                       return 1
+                    else:
+                        return 2
+                action = map(_categorize_actions, action)
                 x_train.extend(observation)
                 y_train.extend(action)
         x_train = np.asarray(x_train)
@@ -132,7 +145,7 @@ if __name__ == "__main__":
     agent = Agent(env)
     # print(agent.observations)
     # print(agent.actions)
-    # agent.train(percentile=70.0, num_iterations=3, num_episodes=10)
-    # agent.play(num_episodes=10)
-    import cProfile
-    cProfile.run("agent.get_samples(1)")
+    agent.train(percentile=70.0, num_iterations=3, num_episodes=10)
+    agent.play(num_episodes=10)
+    # import cProfile
+    # cProfile.run("agent.get_samples(1)")
