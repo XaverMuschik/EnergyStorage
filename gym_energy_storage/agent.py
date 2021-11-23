@@ -7,7 +7,6 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
-import timeit
 
 import os
 import tensorflow as tf
@@ -65,8 +64,8 @@ class Agent:
 
     def get_samples(self, num_episodes: int):
         """Sample games."""
-        rewards = [0.0 for i in range(num_episodes)]  # TODO: use numpy objects
-        episodes = [[] for i in range(num_episodes)]  # TODO: use numpy objects
+        rewards = [0.0 for i in range(num_episodes)]
+        episodes = [[] for i in range(num_episodes)]
 
         for episode in range(num_episodes):
             # start = time.time()
@@ -146,11 +145,9 @@ if __name__ == "__main__":
     agent = Agent(env)
     # print(agent.observations)
     # print(agent.actions)
-    timeit.timeit("")
-    agent.
 
-    # agent.train(percentile=70.0, num_iterations=3, num_episodes=10)
-    # agent.play(num_episodes=10)
+    agent.train(percentile=30.0, num_iterations=10, num_episodes=100)
+    agent.play(num_episodes=10)
 
     # import cProfile
     # cProfile.run("agent.get_samples(1)")

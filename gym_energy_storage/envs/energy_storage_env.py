@@ -22,7 +22,7 @@ class EnergyStorageEnv(gym.Env):
 		self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
 		self.cur_date = self.start_date  # keep track of current date
 		self.time_step = 0  # variable used for slicing mean and var values
-		self.end_date = datetime.fromisoformat("2016-01-01")
+		self.end_date = datetime.fromisoformat("2015-07-01")
 		self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
 		self._get_spot_price_params()  # might be necessary to specify path here?
 		self.observation_space = 5
@@ -58,10 +58,10 @@ class EnergyStorageEnv(gym.Env):
 		self.prob_pos_jump = d["Prob.Pos.Jump"]
 		self.exp_jump_distr = d["Exp.Jump.Distr"]  # lambda parameter of jump distribution
 		self.est_mean_rev = d["Est.Mean.Rev"]
-		self.est_mean = pd.DataFrame(d["Est.Mean"])	# TODO: convert to numpy after year and month have been added
+		self.est_mean = pd.DataFrame(d["Est.Mean"])
 		self.est_mean["year"] = self.est_mean["year"].astype(int)
 		self.est_mean["month"] = self.est_mean["month"].astype(int)
-		self.est_std = pd.DataFrame(d["Est.Std"]) # TODO: convert to numpy after month has been added
+		self.est_std = pd.DataFrame(d["Est.Std"])
 		self.est_std["month"] = self.est_std["month"].astype(int)
 
 		# merge average vola to mean price
@@ -234,6 +234,11 @@ if __name__ == "__main__":
 
 	result = timeit.timeit("env.next_price()", globals=globals(), number=5000) / 5000
 	print(f"avg time required for _next_price: {result}")
+
+	env.reset()
+
+	result = timeit.timeit("env.step('up')", globals=globals(), number=5000) / 5000
+	print(f"avg time required for step: {result}")
 
 	# result = timeit.timeit('float(env.mean_std.loc[(env.mean_std["year"] == 2015) & (env.mean_std["month"] == 6), "Mean"])', globals=globals(), number=10000) / 10000
 	# print(f"avg time required for step: {result}")
