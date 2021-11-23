@@ -7,6 +7,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
+import timeit
 
 import os
 import tensorflow as tf
@@ -145,7 +146,11 @@ if __name__ == "__main__":
     agent = Agent(env)
     # print(agent.observations)
     # print(agent.actions)
-    agent.train(percentile=70.0, num_iterations=3, num_episodes=10)
-    agent.play(num_episodes=10)
+    timeit.timeit("")
+    agent.
+
+    # agent.train(percentile=70.0, num_iterations=3, num_episodes=10)
+    # agent.play(num_episodes=10)
+
     # import cProfile
     # cProfile.run("agent.get_samples(1)")
