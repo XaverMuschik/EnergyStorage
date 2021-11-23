@@ -64,8 +64,8 @@ class Agent:
 
     def get_samples(self, num_episodes: int):
         """Sample games."""
-        rewards = [0.0 for i in range(num_episodes)]
-        episodes = [[] for i in range(num_episodes)]
+        rewards = [0.0 for i in range(num_episodes)]  # TODO: use numpy objects
+        episodes = [[] for i in range(num_episodes)]  # TODO: use numpy objects
 
         for episode in range(num_episodes):
             # start = time.time()
@@ -95,7 +95,7 @@ class Agent:
             if reward >= reward_bound:
                 observation = [step[0] for step in episode]
                 action = [step[1] for step in episode]
-                def _categorize_actions(x):
+                def _categorize_actions(x):  # TODO: use cython here???
                     """ uses same order as env.action_space has """
                     if x == 'up':
                         return 0

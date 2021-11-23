@@ -54,10 +54,10 @@ class EnergyStorageEnv(gym.Env):
 		self.prob_pos_jump = d["Prob.Pos.Jump"]
 		self.exp_jump_distr = d["Exp.Jump.Distr"]  # lambda parameter of jump distribution
 		self.est_mean_rev = d["Est.Mean.Rev"]
-		self.est_mean = pd.DataFrame(d["Est.Mean"])
+		self.est_mean = pd.DataFrame(d["Est.Mean"])	# TODO: convert to numpy after year and month have been added
 		self.est_mean["year"] = self.est_mean["year"].astype(int)
 		self.est_mean["month"] = self.est_mean["month"].astype(int)
-		self.est_std = pd.DataFrame(d["Est.Std"])
+		self.est_std = pd.DataFrame(d["Est.Std"]) # TODO: convert to numpy after month has been added
 		self.est_std["month"] = self.est_std["month"].astype(int)
 
 		# merge average vola to mean price
@@ -65,10 +65,10 @@ class EnergyStorageEnv(gym.Env):
 
 	def _generate_jump(self, mean):
 		if mean > self.cur_price:
-			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_pos_jump / 100)
+			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_pos_jump / 100)  # TODO %timeit: vergleich mit if then block (Vermeidung Boolean Multiplication)
 			jump = jump_occurrence * np.random.exponential(self.exp_jump_distr, 1)
 		else:
-			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_neg_jump / 100)
+			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_neg_jump / 100) # TODO: same as above
 			jump = - (jump_occurrence * np.random.exponential(self.exp_jump_distr, 1))
 		#print(f"Jump stattgefunden: {jump_occurrence}")
 		#print(f"Jump size: {jump}")
@@ -82,7 +82,7 @@ class EnergyStorageEnv(gym.Env):
 		month = self.cur_date.month
 		year = self.cur_date.year
 
-		mean = float(self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean"])
+		mean = float(self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean"]) # TODO: slice based on numpy index (keep track of starting and current month)
 		std = float(self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std"])
 		#print(f"Mean: {mean}")
 		#print(f"std: {std}")
