@@ -43,7 +43,7 @@ class Pi(nn.Module):
         return pdparams
 
     def act(self, state):
-        x = torch.from_numpy(state.astype(np.float))
+        x = torch.from_numpy(state.astype(np.float32))
         pdparam = self.forward(x)
         pd = Categorical(logits=pdparam)
         action = pd.sample()
@@ -70,7 +70,7 @@ def train(pi, optimizer, gamma):
     return loss
 
 def main():
-        env = gym.make('gym_energy_storage')
+        env = gym.make('energy_storage-v0')
         in_dim = env.observation_space  # shape of observations
         out_dim = len(env.action_space)  # shape of action space
         pi = Pi(in_dim, out_dim)
@@ -79,17 +79,17 @@ def main():
             state = env.reset()
             for t in range(len(env.time_index)):
                 action = pi.act(state)
-                state, reward, done, _ = env.step(action)
+                state, reward, done, _ = env.step(action)  # ToDo: check out which actions are (why) taken
                 pi.rewards.append(reward)
                 if done:
                     break
             loss = train(pi, optimizer, gamma=0.99)  # train per episode
             total_reward = sum(pi.rewards)
             pi.onpolicy_reset()
-            print(f'Episode {epi}, loss: {loss}. \
+            print(f'Episode {epi}, loss: {loss} \
             total_reward: {total_reward}')
 
 
 if __name__ == "__main__":
-    env = gym.make('energy_storage-v0')
+    # env = gym.make('energy_storage-v0')
     main()

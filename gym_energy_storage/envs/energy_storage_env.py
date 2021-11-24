@@ -185,7 +185,7 @@ class EnergyStorageEnv(gym.Env):
 		year = self.mean_std[self.time_step, 1]
 		month = self.mean_std[self.time_step, 0]
 
-		observations = [year, month, self.cur_price, self.stor_lev, self.stor_val]
+		observations = np.array([year, month, self.cur_price, self.stor_lev, self.stor_val])
 
 		if (year == float(self.end_date.year)) & (month == float(self.end_date.month)):
 			drop = True
@@ -212,7 +212,7 @@ class EnergyStorageEnv(gym.Env):
 		# set cum_reward to zero
 		# self.cum_reward = 0.0
 
-		observations = [self.cur_date.year, self.cur_date.month, self.cur_price, self.stor_lev, self.stor_val]
+		observations = np.array([self.cur_date.year, self.cur_date.month, self.cur_price, self.stor_lev, self.stor_val])
 		return observations
 
 	def render(self, mode: str = "human", close: bool = False) -> None:
