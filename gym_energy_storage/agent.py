@@ -1,13 +1,10 @@
 import gym
 import gym_energy_storage
-# import matplotlib.pyplot as plt
 import numpy as np
-from tensorflow.keras.layers import Activation
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.utils import to_categorical
-
+from torch.distributions import Categorical
+import torch
+import torch.nn as nn
+import torch.optim as optim
 import os
 import tensorflow as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
@@ -17,137 +14,82 @@ if tf.test.gpu_device_name():
 else:
     print("No GPU found")
 
-import time
 
+class Pi(nn.Module):
 
-class Agent:
-    """Agent class for the cross-entropy learning algorithm."""
+    """ agent class for reinforce algorithm """
 
-    def __init__(self, env):
+    def __init__(self, in_dim, out_dim):
         """Set up the environment, the neural network and member variables.
 
-        Parameters
-        ----------
-        env : gym.Environment
-            The game environment
         """
-        self.env = env
-        self.observations = self.env.observation_space
-        self.actions = len(self.env.action_space)
-        self.model = self.get_model()
-        self.epsilon = 0.1
+        super(Pi, self).__init__()
+        layers = [
+            nn.Linear(in_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, out_dim),
+        ]
 
-    def get_model(self):
-        """Returns a keras NN model."""
-        model = Sequential()
-        model.add(Dense(units=100, input_dim=self.observations))
-        model.add(Activation("relu"))
-        model.add(Dense(units=self.actions))  # Output: Action [L, R]
-        model.add(Activation("softmax"))
-        model.summary()
-        model.compile(
-            optimizer=Adam(learning_rate=0.001),
-            loss="categorical_crossentropy",
-            metrics=["accuracy"],
-        )
-        return model
+        self.model = nn.Sequential(*layers)
+        self.onpolicy_reset()
+        self.train()
 
-    def get_action(self, state: np.ndarray):
-        """Based on the state, get an action."""
-        state = np.asarray(state).reshape(1, -1)  # [4,] => [1, 4]
-        action = self.model(state).numpy()[0]
-        if max(action) > (1 - self.epsilon):
-            action += self.epsilon / 2
-            action[np.argmax(action)] -= 1.5 * self.epsilon
-        action = np.random.choice(env.action_space, p=action)  # choice([0, 1], [0.5044534  0.49554658])
-        return action
+    def onpolicy_reset(self):
+        self.log_probs = []
+        self.rewards = []
 
-    def get_samples(self, num_episodes: int):
-        """Sample games."""
-        rewards = [0.0 for i in range(num_episodes)]
-        episodes = [[] for i in range(num_episodes)]
+    def forward(self, x):
+        pdparams = self.model(x)
+        return pdparams
 
-        for episode in range(num_episodes):
-            # start = time.time()
+    def act(self, state):
+        x = torch.from_numpy(state.astype(np.float))
+        pdparam = self.forward(x)
+        pd = Categorical(logits=pdparam)
+        action = pd.sample()
+        log_prob = pd.log_prob(action)
+        self.log_probs.append(log_prob)
+        return action.item()
 
-            state = self.env.reset()
-            total_reward = 0.0
+def train(pi, optimizer, gamma):
+    # inner gradient-acent loop of REINFORCE algorithm
+    T = len(pi.rewards)
+    rets = np.empty(T, dtype=np.float)
+    future_ret = 0.0
+    # compute the returns efficiently
+    for t in reversed(range(T)):
+        future_ret = pi.rewards[t] + gamma * future_ret
+        rets[t] = future_ret
+    rets = torch.tensor(rets)
+    log_probs = torch.stack(pi.log_probs)
+    loss = - log_probs * rets  # gradient term; Negative for maximization
+    loss = torch.sum(loss)
+    optimizer.zero_grad()
+    loss.backward()  # backpropagate, compute gradients
+    optimizer.step()  # gradient-ascent, update the weights
+    return loss
 
-            while True:
-                action = self.get_action(state)
-                new_state, reward, done, _ = self.env.step(action)
-                total_reward += reward
-                episodes[episode].append((state, action))
-                state = new_state
+def main():
+        env = gym.make('gym_energy_storage')
+        in_dim = env.observation_space  # shape of observations
+        out_dim = len(env.action_space)  # shape of action space
+        pi = Pi(in_dim, out_dim)
+        optimizer = optim.Adam(pi.parameters(), lr=0.01)
+        for epi in range(300):
+            state = env.reset()
+            for t in range(len(env.time_index)):
+                action = pi.act(state)
+                state, reward, done, _ = env.step(action)
+                pi.rewards.append(reward)
                 if done:
-                    rewards[episode] = total_reward
                     break
-            # end = time.time()
-            # print(f"time elapsed: {end - start}")
-
-        return rewards, episodes
-
-    def filter_episodes(self, rewards, episodes, percentile):
-        """Helper function for the training."""
-        reward_bound = np.percentile(rewards, percentile)
-        x_train, y_train = [], []
-        for reward, episode in zip(rewards, episodes):
-            if reward >= reward_bound:
-                observation = [step[0] for step in episode]
-                action = [step[1] for step in episode]
-                def _categorize_actions(x):  # TODO: use cython here???
-                    """ uses same order as env.action_space has """
-                    if x == 'up':
-                        return 0
-                    elif x == 'down':
-                       return 1
-                    else:
-                        return 2
-                action = map(_categorize_actions, action)
-                x_train.extend(observation)
-                y_train.extend(action)
-        x_train = np.asarray(x_train)
-        y_train = to_categorical(y_train, num_classes=self.actions)  # L = 0 => [1, 0]
-        return x_train, y_train, reward_bound
-
-    def train(self, percentile, num_iterations, num_episodes):
-        """Play games and train the NN."""
-        for iteration in range(num_iterations):
-            rewards, episodes = self.get_samples(num_episodes)
-            print("filter episodes")
-            x_train, y_train, reward_bound = self.filter_episodes(rewards, episodes, percentile)
-            print("fitting model")
-            self.model.fit(x=x_train, y=y_train, verbose=0)
-            print("model fitted")
-            reward_mean = np.mean(rewards)
-            print(f"Reward mean: {reward_mean}, reward bound: {reward_bound}")
-            if reward_mean > 500:
-                break
-
-    def play(self, num_episodes: int, render: bool = False):
-        """Test the trained agent."""
-        for episode in range(num_episodes):
-            state = self.env.reset()
-            total_reward = 0.0
-            while True:
-                if render:
-                    self.env.render()
-                action = self.get_action(state)
-                state, reward, done, _ = self.env.step(action)
-                total_reward += reward
-                if done:
-                    print(f"Total reward: {total_reward} in epsiode {episode + 1}")
-                    break
+            loss = train(pi, optimizer, gamma=0.99)  # train per episode
+            total_reward = sum(pi.rewards)
+            pi.onpolicy_reset()
+            print(f'Episode {epi}, loss: {loss}. \
+            total_reward: {total_reward}')
 
 
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
-    agent = Agent(env)
-    # print(agent.observations)
-    # print(agent.actions)
-
-    agent.train(percentile=30.0, num_iterations=10, num_episodes=100)
-    agent.play(num_episodes=10)
-
-    # import cProfile
-    # cProfile.run("agent.get_samples(1)")
+    main()
