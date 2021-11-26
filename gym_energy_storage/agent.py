@@ -8,6 +8,7 @@ import torch.optim as optim
 import os
 import tensorflow as tf
 import torch
+import pandas as pd
 
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
@@ -27,9 +28,11 @@ class Pi(nn.Module):
         """
         super(Pi, self).__init__()
         layers = [
-            nn.Linear(in_dim, 64),
+            nn.Linear(in_dim, 50),
             nn.ReLU(),
-            nn.Linear(64, out_dim),
+            nn.Linear(50, 10),
+            nn.ReLU(),
+            nn.Linear(10, out_dim),
         ]
 
         self.model = nn.Sequential(*layers)
@@ -85,27 +88,34 @@ def main():
         in_dim = env.observation_space  # shape of observations
         out_dim = len(env.action_space)  # shape of action space
         pi = Pi(in_dim, out_dim)
-        optimizer = optim.Adam(pi.parameters(), lr=0.01)
+        optimizer = optim.Adam(pi.parameters(), lr=0.3)
         action_vector = []
-        for epi in range(300):
+        reward_vector = []
+        for epi in range(100):
             state = env.reset()
             for t in range(len(env.time_index)):
                 action = pi.act(state)
+                state, reward, done, action = env.step(action)  # ToDo: check out which actions are (why) taken
                 action_vector.append(action)
-                state, reward, done, _ = env.step(action)  # ToDo: check out which actions are (why) taken
                 pi.rewards.append(reward)
                 if done:
                     break
             number_actions = {i: action_vector.count(i) for i in action_vector}
             loss = train(pi, optimizer, gamma=0.99)  # train per episode
-            total_reward = sum(pi.rewards)
+            total_reward = sum(pi.rewards) + abs(env.penalty) * number_actions[2]
             pi.onpolicy_reset()
             print(f'Episode {epi}, loss: {loss}, \
             total_reward: {total_reward}, \
             actions taken: {number_actions}')
             action_vector = []
-
+            reward_vector.append(total_reward)
+        return reward_vector
 
 if __name__ == "__main__":
     # env = gym.make('energy_storage-v0')
-    main()
+    rewards = main()
+    df = pd.DataFrame(rewards, columns=["total rewards"])
+    df["mean"] = df["total rewards"].rolling(window=20).mean()
+    df.plot()
+    import matplotlib.pyplot as plt
+    plt.savefig("learning_outcome.png")
