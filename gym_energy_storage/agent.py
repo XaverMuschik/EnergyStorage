@@ -7,6 +7,8 @@ import torch.nn as nn
 import torch.optim as optim
 import os
 import tensorflow as tf
+import torch
+
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
 if tf.test.gpu_device_name():
@@ -43,13 +45,22 @@ class Pi(nn.Module):
         return pdparams
 
     def act(self, state):
-        x = torch.from_numpy(state.astype(np.float32))
-        pdparam = self.forward(x)
-        pd = Categorical(logits=pdparam)
-        action = pd.sample()
-        log_prob = pd.log_prob(action)
-        self.log_probs.append(log_prob)
-        return action.item()
+
+        '''Epsilon-greedy policy: with probability epsilon, do random action, otherwise do default sampling.'''
+        epsilon = 0.2
+        if epsilon > np.random.uniform(low=0.0, high=1.0):
+            action = np.random.choice([0, 1, 2])  # randomly sample from action space
+            log_prob = np.log(torch.tensor(1/3))
+            self.log_probs.append(torch.tensor(log_prob))
+            return action
+        else:
+            x = torch.from_numpy(state.astype(np.float32))
+            pdparam = self.forward(x)
+            pd = Categorical(logits=pdparam)
+            action = pd.sample()
+            log_prob = pd.log_prob(action)
+            self.log_probs.append(log_prob)
+            return action.item()
 
 def train(pi, optimizer, gamma):
     # inner gradient-acent loop of REINFORCE algorithm
@@ -75,19 +86,24 @@ def main():
         out_dim = len(env.action_space)  # shape of action space
         pi = Pi(in_dim, out_dim)
         optimizer = optim.Adam(pi.parameters(), lr=0.01)
+        action_vector = []
         for epi in range(300):
             state = env.reset()
             for t in range(len(env.time_index)):
                 action = pi.act(state)
+                action_vector.append(action)
                 state, reward, done, _ = env.step(action)  # ToDo: check out which actions are (why) taken
                 pi.rewards.append(reward)
                 if done:
                     break
+            number_actions = {i: action_vector.count(i) for i in action_vector}
             loss = train(pi, optimizer, gamma=0.99)  # train per episode
             total_reward = sum(pi.rewards)
             pi.onpolicy_reset()
-            print(f'Episode {epi}, loss: {loss} \
-            total_reward: {total_reward}')
+            print(f'Episode {epi}, loss: {loss}, \
+            total_reward: {total_reward}, \
+            actions taken: {number_actions}')
+            action_vector = []
 
 
 if __name__ == "__main__":
