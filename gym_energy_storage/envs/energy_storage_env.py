@@ -127,7 +127,7 @@ class EnergyStorageEnv(gym.Env):
 		if action == 0:
 			num_action = min(self.max_in, (self.max_stor_lev - self.stor_lev))
 		elif action == 1:
-			num_action = min(abs(self.max_wd), self.stor_lev)
+			num_action = - min(abs(self.max_wd), self.stor_lev)
 		else:
 			num_action = 0
 
