@@ -42,11 +42,12 @@ class Agent:
             return (arg - min_arg) / (max_arg - min_arg)
 
         normalized = state.copy()
-        normalized[0] = scale(1.0, 31.0, state[0])
-        normalized[1] = scale(1.0, 12.0, state[1])
-        normalized[2] = scale(2015.0, 2030.0, state[2])
-        normalized[3] = scale(-200.0, 200.0, state[3])
-        normalized[5] = scale(-200.0, 200.0, state[5])
+        normalized[0, 0] = scale(1.0, 31.0, state[0, 0])
+        normalized[0, 1] = scale(1.0, 12.0, state[0, 1])
+        normalized[0, 2] = scale(2015.0, 2030.0, state[0, 2])
+        normalized[0, 3] = scale(-200.0, 200.0, state[0, 3])
+        normalized[0, 5] = scale(-200.0, 200.0, state[0, 5])
+        return normalized
 
     def get_model(self):
         """Returns a keras NN model."""
