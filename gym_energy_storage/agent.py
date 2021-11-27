@@ -47,10 +47,14 @@ class Pi(nn.Module):
         pdparams = self.model(x)
         return pdparams
 
-    def act(self, state):
+    def act(self, state, epi):
 
         '''Epsilon-greedy policy: with probability epsilon, do random action, otherwise do default sampling.'''
-        epsilon = 0.2
+
+        if epi < 1000:
+            epsilon = 0.1
+        else:
+            epsilon = -0.1
         if epsilon > np.random.uniform(low=0.0, high=1.0):
             action = np.random.choice([0, 1, 2])  # randomly sample from action space
             log_prob = np.log(torch.tensor(1/3))
@@ -88,13 +92,13 @@ def main():
         in_dim = env.observation_space  # shape of observations
         out_dim = len(env.action_space)  # shape of action space
         pi = Pi(in_dim, out_dim)
-        optimizer = optim.Adam(pi.parameters(), lr=0.3)
+        optimizer = optim.Adam(pi.parameters(), lr=0.1)
         action_vector = []
         reward_vector = []
-        for epi in range(100):
+        for epi in range(5000):
             state = env.reset()
             for t in range(len(env.time_index)):
-                action = pi.act(state)
+                action = pi.act(state, epi)
                 state, reward, done, action = env.step(action)  # ToDo: check out which actions are (why) taken
                 action_vector.append(action)
                 pi.rewards.append(reward)

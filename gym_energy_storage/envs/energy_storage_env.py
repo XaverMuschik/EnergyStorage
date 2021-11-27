@@ -27,15 +27,15 @@ class EnergyStorageEnv(gym.Env):
 		self._get_spot_price_params()  # might be necessary to specify path here?
 		self.observation_space = 3
 		self.action_space = ["up", "down", "cons"]
-		self.penalty = -0.05
-		self.round_acc = 0.0001
+		self.penalty = -0.5
 
 		# storage specifics
-		self.max_stor_lev = 0.005  # in MWh
-		self.max_wd = -0.0024  # in MW
-		self.max_in = 0.00165  # in MW
+		self.max_stor_lev = 10  # in MWh
+		self.max_wd = -2.5  # in MW
+		self.max_in = 1.5  # in MW
 		self.stor_eff = 0.9  # 10% loss for each conversion
-		
+		self.round_acc = self.max_stor_lev / 1000
+
 		# set initial parameters for price, storage level, storage value, and cumulative reward
 		self.stor_lev = 0.0
 		self.stor_val = 0.0
