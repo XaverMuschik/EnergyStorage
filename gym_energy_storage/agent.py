@@ -35,7 +35,8 @@ class Agent:
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
         self.model = self.get_model()
-        self.epsilon = 0.2
+        self.epsilon = 0.3
+        self.epsilon_decay = 0.99
 
     def normalize(self, state):
         def scale(min_arg, max_arg, arg):
@@ -52,14 +53,14 @@ class Agent:
     def get_model(self):
         """Returns a keras NN model."""
         model = Sequential()
-        model.add(Dense(units=16, input_dim=self.observations))
+        model.add(Dense(units=32, input_dim=self.observations))
         model.add(Activation("sigmoid"))  # relu sigmoid
         model.add(Dense(16, activation="sigmoid"))  # sigmoid relu
         model.add(Dense(units=self.actions))  # Output: Action [L, R]
         model.add(Activation("softmax"))
         model.summary()
         model.compile(
-            optimizer=Adam(learning_rate=0.001),  # lr=0.001
+            optimizer=Adam(learning_rate=0.01),  # lr=0.001
             loss="categorical_crossentropy",
             metrics=["accuracy"],
         )
@@ -137,6 +138,7 @@ class Agent:
             # print("model fitted")
             reward_mean = np.mean(rewards)
             print(f"Iteration: {iteration+1} of number iterations {num_iterations}, Reward mean: {reward_mean}, reward bound: {reward_bound}")
+            self.epsilon *= self.epsilon_decay
             # if reward_mean > 500:
             #     break
 
@@ -162,7 +164,7 @@ if __name__ == "__main__":
     # print(agent.observations)
     # print(agent.actions)
 
-    agent.train(percentile=70.0, num_iterations=200, num_episodes=100)
+    agent.train(percentile=70.0, num_iterations=200, num_episodes=60)
     agent.play(num_episodes=10)
 
     # import cProfile
