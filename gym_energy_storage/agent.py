@@ -51,7 +51,7 @@ class Pi(nn.Module):
 
         '''Epsilon-greedy policy: with probability epsilon, do random action, otherwise do default sampling.'''
 
-        if epi < 1000:
+        if epi < 500:
             epsilon = 0.1
         else:
             epsilon = -0.1
@@ -95,7 +95,7 @@ def main():
         optimizer = optim.Adam(pi.parameters(), lr=0.1)
         action_vector = []
         reward_vector = []
-        for epi in range(5000):
+        for epi in range(750):
             state = env.reset()
             for t in range(len(env.time_index)):
                 action = pi.act(state, epi)
