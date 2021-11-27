@@ -54,13 +54,14 @@ class Agent:
 
     def get_action(self, state: np.ndarray):
         """Based on the state, get an action."""
-        state = np.asarray(state).reshape(1, -1)  # [4,] => [1, 4]
-        action = self.model(state).numpy()[0]
-        if max(action) > (1 - self.epsilon):
-            action += self.epsilon / 2
-            action[np.argmax(action)] -= 1.5 * self.epsilon
-        action = np.random.choice(env.action_space, p=action)  # choice([0, 1], [0.5044534  0.49554658])
-        return action
+        if self.epsilon > np.random.uniform(low=0.0, high=1.0):
+            action = np.random.choice([0, 1, 2])  # randomly sample from action space
+            return action
+        else:
+            state = np.asarray(state).reshape(1, -1)  # [4,] => [1, 4]
+            action = self.model(state).numpy()[0]
+            action = np.random.choice(env.action_space, p=action)  # choice([0, 1], [0.5044534  0.49554658])
+            return action
 
     def get_samples(self, num_episodes: int):
         """Sample games."""
