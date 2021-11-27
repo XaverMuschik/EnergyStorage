@@ -25,7 +25,7 @@ class EnergyStorageEnv(gym.Env):
 		self.end_date = datetime.fromisoformat("2015-07-01")
 		self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
 		self._get_spot_price_params()  # might be necessary to specify path here?
-		self.observation_space = 3
+		self.observation_space = 6
 		self.action_space = ["up", "down", "cons"]
 		self.penalty = -0.5
 
@@ -198,7 +198,7 @@ class EnergyStorageEnv(gym.Env):
 		year = self.mean_std[self.time_step, 1]
 		month = self.mean_std[self.time_step, 0]
 
-		observations = np.array([self.cur_price, self.stor_lev, self.stor_val])
+		observations = np.array([self.cur_date.day, self.cur_date.month, self.cur_date.year, self.cur_price, self.stor_lev, self.stor_val])
 
 		if (year == float(self.end_date.year)) & (month == float(self.end_date.month)):
 			drop = True
@@ -225,7 +225,7 @@ class EnergyStorageEnv(gym.Env):
 		# set cum_reward to zero
 		# self.cum_reward = 0.0
 
-		observations = np.array([self.cur_price, self.stor_lev, self.stor_val])
+		observations = np.array([self.cur_date.day, self.cur_date.month, self.cur_date.year, self.cur_price, self.stor_lev, self.stor_val])
 		return observations
 
 	def render(self, mode: str = "human", close: bool = False) -> None:

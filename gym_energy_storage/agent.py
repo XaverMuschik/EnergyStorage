@@ -6,7 +6,7 @@ from tensorflow.keras.layers import Activation
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical  #, normalize
 
 import os
 import tensorflow as tf
@@ -35,18 +35,30 @@ class Agent:
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
         self.model = self.get_model()
-        self.epsilon = 0.1
+        self.epsilon = 0.2
+
+    def normalize(self, state):
+        def scale(min_arg, max_arg, arg):
+            return (arg - min_arg) / (max_arg - min_arg)
+
+        normalized = state.copy()
+        normalized[0] = scale(1.0, 31.0, state[0])
+        normalized[1] = scale(1.0, 12.0, state[1])
+        normalized[2] = scale(2015.0, 2030.0, state[2])
+        normalized[3] = scale(-200.0, 200.0, state[3])
+        normalized[5] = scale(-200.0, 200.0, state[5])
 
     def get_model(self):
         """Returns a keras NN model."""
         model = Sequential()
-        model.add(Dense(units=100, input_dim=self.observations))
-        model.add(Activation("relu"))
+        model.add(Dense(units=16, input_dim=self.observations))
+        model.add(Activation("sigmoid"))  # relu sigmoid
+        model.add(Dense(16, activation="sigmoid"))  # sigmoid relu
         model.add(Dense(units=self.actions))  # Output: Action [L, R]
         model.add(Activation("softmax"))
         model.summary()
         model.compile(
-            optimizer=Adam(learning_rate=0.001),
+            optimizer=Adam(learning_rate=0.001),  # lr=0.001
             loss="categorical_crossentropy",
             metrics=["accuracy"],
         )
@@ -58,8 +70,9 @@ class Agent:
             action = np.random.choice([0, 1, 2])  # randomly sample from action space
             return action
         else:
-            state = np.asarray(state).reshape(1, -1)  # [4,] => [1, 4]
+            state = self.normalize(np.asarray(state).reshape(1, -1))  # [4,]< => [1, 4]
             action = self.model(state).numpy()[0]
+            # print(action)
             action = np.random.choice(env.action_space, p=action)  # choice([0, 1], [0.5044534  0.49554658])
             return action
 
@@ -76,7 +89,7 @@ class Agent:
 
             while True:
                 action = self.get_action(state)
-                new_state, reward, done, _ = self.env.step(action)
+                new_state, reward, done, action = self.env.step(action)  # overwrite selected action with actually executed action
                 total_reward += reward
                 episodes[episode].append((state, action))
                 state = new_state
@@ -117,13 +130,14 @@ class Agent:
             rewards, episodes = self.get_samples(num_episodes)
             # print("filter episodes")
             x_train, y_train, reward_bound = self.filter_episodes(rewards, episodes, percentile)
+            x_train = self.normalize(x_train)
             # print("fitting model")
             self.model.fit(x=x_train, y=y_train, verbose=0)
             # print("model fitted")
             reward_mean = np.mean(rewards)
-            print(f"Reward mean: {reward_mean}, reward bound: {reward_bound}")
-            if reward_mean > 500:
-                break
+            print(f"Iteration: {iteration+1} of number iterations {num_iterations}, Reward mean: {reward_mean}, reward bound: {reward_bound}")
+            # if reward_mean > 500:
+            #     break
 
     def play(self, num_episodes: int, render: bool = False):
         """Test the trained agent."""
@@ -147,7 +161,7 @@ if __name__ == "__main__":
     # print(agent.observations)
     # print(agent.actions)
 
-    agent.train(percentile=70.0, num_iterations=10, num_episodes=100)
+    agent.train(percentile=70.0, num_iterations=200, num_episodes=100)
     agent.play(num_episodes=10)
 
     # import cProfile
