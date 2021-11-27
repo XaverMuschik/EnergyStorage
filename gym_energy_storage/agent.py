@@ -96,12 +96,12 @@ class Agent:
             if reward >= reward_bound:
                 observation = [step[0] for step in episode]
                 action = [step[1] for step in episode]
-                def _categorize_actions(x):  # TODO: use cython here???
+                def _categorize_actions(x):
                     """ uses same order as env.action_space has """
                     if x == 'up':
                         return 0
                     elif x == 'down':
-                       return 1
+                        return 1
                     else:
                         return 2
                 action = map(_categorize_actions, action)
@@ -115,11 +115,11 @@ class Agent:
         """Play games and train the NN."""
         for iteration in range(num_iterations):
             rewards, episodes = self.get_samples(num_episodes)
-            print("filter episodes")
+            # print("filter episodes")
             x_train, y_train, reward_bound = self.filter_episodes(rewards, episodes, percentile)
-            print("fitting model")
+            # print("fitting model")
             self.model.fit(x=x_train, y=y_train, verbose=0)
-            print("model fitted")
+            # print("model fitted")
             reward_mean = np.mean(rewards)
             print(f"Reward mean: {reward_mean}, reward bound: {reward_bound}")
             if reward_mean > 500:
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     # print(agent.observations)
     # print(agent.actions)
 
-    agent.train(percentile=30.0, num_iterations=10, num_episodes=100)
+    agent.train(percentile=70.0, num_iterations=10, num_episodes=100)
     agent.play(num_episodes=10)
 
     # import cProfile

@@ -25,15 +25,17 @@ class EnergyStorageEnv(gym.Env):
 		self.end_date = datetime.fromisoformat("2015-07-01")
 		self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
 		self._get_spot_price_params()  # might be necessary to specify path here?
-		self.observation_space = 5
+		self.observation_space = 3
 		self.action_space = ["up", "down", "cons"]
+		self.penalty = -0.5
 
 		# storage specifics
-		self.max_stor_lev = 0.005  # in MWh
-		self.max_wd = -0.0024  # in MW
-		self.max_in = 0.00165  # in MW
+		self.max_stor_lev = 10  # in MWh
+		self.max_wd = -2.5  # in MW
+		self.max_in = 1.5  # in MW
 		self.stor_eff = 0.9  # 10% loss for each conversion
-		
+		self.round_acc = self.max_stor_lev / 1000
+
 		# set initial parameters for price, storage level, storage value, and cumulative reward
 		self.stor_lev = 0.0
 		self.stor_val = 0.0
@@ -122,13 +124,20 @@ class EnergyStorageEnv(gym.Env):
 	def _storage_level_change(self, action):
 		""" this function transforms the discrete action into a change in the level of the storage
 		"""
-		
-		if action == "up":
+		def trunc_action(step_size):
+			if abs(step_size) < self.round_acc:
+				return 0.0
+			else:
+				return step_size
+
+		if action == 0:
 			num_action = min(self.max_in, (self.max_stor_lev - self.stor_lev))
-		elif action == "down":
-			num_action = min(abs(self.max_wd), self.stor_lev)
+			num_action = trunc_action(num_action)
+		elif action == 1:
+			num_action = - min(abs(self.max_wd), self.stor_lev)
+			num_action = trunc_action(num_action)
 		else:
-			num_action = 0
+			num_action = 0.0
 
 		# calculate new storage level after action
 		new_stor_lev = self.stor_lev + self.stor_eff * num_action
@@ -165,34 +174,38 @@ class EnergyStorageEnv(gym.Env):
 		"""
 		
 		# update observations
-
 		num_action, new_stor_lev = self._storage_level_change(action)
 
 		# update storage value
 		self._update_stor_val(num_action)
 
 		# update storage level
-		self.stor_lev = new_stor_lev
+		if self.stor_lev == new_stor_lev:
+			action = 2
+
+			# calculate reward
+			reward = self.penalty
+			# self.cum_reward += reward
+		else:
+			self.stor_lev = new_stor_lev
+			# calculate reward
+			reward = - num_action * self.cur_price
 
 		# update current price after the action was taken
 		self.next_price()
-
-		# calculate reward
-		reward = - num_action * self.cur_price
-		# self.cum_reward += reward
 
 		# generate list from observations for returning them to the agent
 		year = self.mean_std[self.time_step, 1]
 		month = self.mean_std[self.time_step, 0]
 
-		observations = [year, month, self.cur_price, self.stor_lev, self.stor_val]
+		observations = np.array([self.cur_price, self.stor_lev, self.stor_val])
 
 		if (year == float(self.end_date.year)) & (month == float(self.end_date.month)):
 			drop = True
 		else:
 			drop = False
 
-		return observations, reward, drop, {}  # self.cum_reward
+		return observations, reward, drop, action  # self.cum_reward
 
 	def reset(self):
 
@@ -212,7 +225,7 @@ class EnergyStorageEnv(gym.Env):
 		# set cum_reward to zero
 		# self.cum_reward = 0.0
 
-		observations = [self.cur_date.year, self.cur_date.month, self.cur_price, self.stor_lev, self.stor_val]
+		observations = np.array([self.cur_price, self.stor_lev, self.stor_val])
 		return observations
 
 	def render(self, mode: str = "human", close: bool = False) -> None:
