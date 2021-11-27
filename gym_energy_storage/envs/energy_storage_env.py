@@ -28,6 +28,7 @@ class EnergyStorageEnv(gym.Env):
 		self.observation_space = 3
 		self.action_space = ["up", "down", "cons"]
 		self.penalty = -0.05
+		self.round_acc = 0.0001
 
 		# storage specifics
 		self.max_stor_lev = 0.005  # in MWh
@@ -123,13 +124,20 @@ class EnergyStorageEnv(gym.Env):
 	def _storage_level_change(self, action):
 		""" this function transforms the discrete action into a change in the level of the storage
 		"""
-		
+		def trunc_action(step_size):
+			if abs(step_size) < self.round_acc:
+				return 0.0
+			else:
+				return step_size
+
 		if action == 0:
 			num_action = min(self.max_in, (self.max_stor_lev - self.stor_lev))
+			num_action = trunc_action(num_action)
 		elif action == 1:
 			num_action = - min(abs(self.max_wd), self.stor_lev)
+			num_action = trunc_action(num_action)
 		else:
-			num_action = 0
+			num_action = 0.0
 
 		# calculate new storage level after action
 		new_stor_lev = self.stor_lev + self.stor_eff * num_action
