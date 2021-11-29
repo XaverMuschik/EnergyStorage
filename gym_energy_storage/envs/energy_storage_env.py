@@ -142,7 +142,7 @@ class EnergyStorageEnv(gym.Env):
 		""" this function updates the storage value after the new action
 		"""
 		if num_action > 0.0:
-			self.stor_val = (self.stor_val * self.stor_lev + num_action * self.cur_price) / (self.stor_lev + num_action)
+			self.stor_val = (self.stor_val * self.stor_lev + num_action * self.stor_eff * self.cur_price) / (self.stor_lev + num_action * self.stor_eff)
 
 	def step(self, action):
 

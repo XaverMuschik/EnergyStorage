@@ -54,18 +54,35 @@ class TestEnv(unittest.TestCase):
     def testNextStateUp(self):
         env = gym.make('energy_storage-v0')
         env.reset()
-        obs_act, reward_act, drop_act, action_act = env.step("up")
+
+        # step 1
+        obs_act, reward_act, drop_act, action_act = env.step(0)
         obs_expected = np.array([env.start_date.day,
                                  env.start_date.month,
                                  env.start_date.year,
                                  env.cur_price,
-                                 env.max_in,
-                                 env.max_in
+                                 env.max_in * env.stor_eff,
+                                 env.sim_prices[0]
                                  ])
         self.assertTrue(np.allclose(obs_act, obs_expected))
         self.assertEqual(reward_act, -env.max_in * env.cur_price)
         self.assertEqual(drop_act, False)
-        self.assertEqual(action_act, "up")
+        self.assertEqual(action_act, 0)
+
+        # step 2
+        obs_act, reward_act, drop_act, action_act = env.step(0)
+        obs_expected = np.array([env.start_date.day,
+                                 env.start_date.month,
+                                 env.start_date.year,
+                                 env.sim_prices[1],
+                                 2 * env.max_in * env.stor_eff,
+                                 (env.sim_prices[0] + env.sim_prices[1]) / 2
+                                 ])
+        self.assertTrue(np.allclose(obs_act, obs_expected))
+        self.assertAlmostEqual(reward_act, -env.max_in * env.cur_price)
+        self.assertEqual(drop_act, False)
+        self.assertEqual(action_act, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
