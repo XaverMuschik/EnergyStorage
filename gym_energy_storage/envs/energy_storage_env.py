@@ -122,7 +122,7 @@ class EnergyStorageEnv(gym.Env):
 			if abs(step_size) < self.round_acc:
 				return 0.0
 			else:
-				return step_size
+				return float(step_size)
 
 		if action == 0:
 			num_action = min(self.max_in, (self.max_stor_lev - self.stor_lev))
@@ -134,7 +134,10 @@ class EnergyStorageEnv(gym.Env):
 			num_action = 0.0
 
 		# calculate new storage level after action
-		new_stor_lev = self.stor_lev + self.stor_eff * num_action
+		if num_action > 0.0:
+			new_stor_lev = self.stor_lev + self.stor_eff * num_action  # apply efficiency factor to injection
+		else:
+			new_stor_lev = self.stor_lev + num_action
 
 		return num_action, new_stor_lev
 

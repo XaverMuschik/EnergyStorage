@@ -51,7 +51,7 @@ class TestEnv(unittest.TestCase):
     #     sim_price_2 = env.sim_prices
     #     self.assertTrue(np.allclose(sim_price_1, sim_price_2))
 
-    def testNextStateUp(self):
+    def testNextStateUpUp(self):
         env = gym.make('energy_storage-v0')
         env.reset()
 
@@ -82,6 +82,48 @@ class TestEnv(unittest.TestCase):
         self.assertAlmostEqual(reward_act, -env.max_in * env.cur_price)
         self.assertEqual(drop_act, False)
         self.assertEqual(action_act, 0)
+
+    def testNextStateUpDown(self):
+        env = gym.make('energy_storage-v0')
+        env.reset()
+
+        # step up 1
+        obs_act, reward_act, drop_act, action_act = env.step(0)
+        stor_level = env.stor_lev  # save old storage level after step up
+
+        # step down
+        obs_act, reward_act, drop_act, action_act = env.step(1)
+        obs_expected = np.array([env.start_date.day,
+                                 env.start_date.month,
+                                 env.start_date.year,
+                                 env.sim_prices[1],
+                                 max(env.max_in * env.stor_eff + env.max_wd, 0),
+                                 env.sim_prices[0]
+                                 ])
+        self.assertTrue(np.allclose(obs_act, obs_expected))
+        reward_expected = min(-env.max_wd, stor_level) * env.sim_prices[1]
+        self.assertAlmostEqual(reward_act, reward_expected)
+        self.assertEqual(drop_act, False)
+        self.assertEqual(action_act, 1)
+
+    def testNextStateCons(self):
+        env = gym.make('energy_storage-v0')
+        env.reset()
+
+        # step cons
+        obs_act, reward_act, drop_act, action_act = env.step(2)
+        obs_expected = np.array([env.start_date.day,
+                                 env.start_date.month,
+                                 env.start_date.year,
+                                 env.sim_prices[1],
+                                 0,
+                                 0
+                                 ])
+        self.assertTrue(np.allclose(obs_act, obs_expected))
+        reward_expected = env.penalty
+        self.assertAlmostEqual(reward_act, reward_expected)
+        self.assertEqual(drop_act, False)
+        self.assertEqual(action_act, 2)
 
 
 if __name__ == "__main__":
