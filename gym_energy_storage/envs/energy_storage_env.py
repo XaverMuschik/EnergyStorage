@@ -8,6 +8,7 @@ from datetime import datetime
 from datetime import timedelta
 import os
 
+
 class EnergyStorageEnv(gym.Env):
 
 	""" Define environment which energy storage works in.
@@ -179,6 +180,7 @@ class EnergyStorageEnv(gym.Env):
 			drop = True
 		else:
 			drop = False
+			self.cur_date += timedelta(hours=1)
 
 		return observations, reward, drop, action
 
