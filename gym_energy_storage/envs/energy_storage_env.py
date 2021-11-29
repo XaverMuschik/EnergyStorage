@@ -179,7 +179,7 @@ class EnergyStorageEnv(gym.Env):
 		# generate list from observations for returning them to the agent
 		observations = np.array([self.cur_date.day, self.cur_date.month, self.cur_date.year, self.cur_price, self.stor_lev, self.stor_val])
 
-		if (self.cur_date.year == float(self.end_date.year)) & (self.cur_date.month == float(self.end_date.month)) & (self.cur_date.day == float(self.end_date.day)):
+		if (self.cur_date.year == self.end_date.year) & (self.cur_date.month == self.end_date.month) & (self.cur_date.day == self.end_date.day):
 			drop = True
 		else:
 			drop = False

@@ -98,7 +98,7 @@ class TestEnv(unittest.TestCase):
                                  env.start_date.year,
                                  env.sim_prices[2],
                                  max(env.max_in * env.stor_eff + env.max_wd, 0),
-                                 env.sim_prices[0]
+                                 env.sim_prices[0]  # storage value unchanged after wd
                                  ])
         self.assertTrue(np.allclose(obs_act, obs_expected))
         reward_expected = min(-env.max_wd, stor_level) * env.sim_prices[1]
@@ -125,6 +125,19 @@ class TestEnv(unittest.TestCase):
         self.assertEqual(drop_act, False)
         self.assertEqual(action_act, 2)
 
+    def testEndOfPeriod(self):
+        """ this test checks if the break criterion is correctly met """
+        env = gym.make('energy_storage-v0')
+        env.reset()
+        env.end_date = datetime.fromisoformat("2015-06-02")
+
+        for t in range(len(env.time_index)-1):
+            _, _, drop_act, _ = env.step(0)
+            test = env.cur_date
+            self.assertEqual(drop_act, False)
+        print(env.cur_date)
+        _, _, drop_act, _ = env.step(0)
+        self.assertEqual(drop_act, True)
 
 if __name__ == "__main__":
     unittest.main()
