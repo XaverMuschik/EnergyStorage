@@ -77,14 +77,11 @@ class EnergyStorageEnv(gym.Env):
 
 	def _generate_jump(self, mean):
 		if mean > self.cur_price:
-			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_pos_jump / 100)  # TODO %timeit: vergleich mit if then block (Vermeidung Boolean Multiplication)
+			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_pos_jump / 100)
 			jump = jump_occurrence * np.random.exponential(self.exp_jump_distr, 1)
 		else:
-			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_neg_jump / 100) # TODO: same as above
+			jump_occurrence = (np.random.uniform(0, 1, 1) <= self.prob_neg_jump / 100)
 			jump = - (jump_occurrence * np.random.exponential(self.exp_jump_distr, 1))
-
-		# print(f"Jump stattgefunden: {jump_occurrence}")
-		# print(f"Jump size: {jump}")
 
 		return jump
 
@@ -199,7 +196,10 @@ class EnergyStorageEnv(gym.Env):
 		self.stor_val = 0.0
 
 		# set price to initial price
-		self.cur_price = self.sim_prices[0]
+		self.cur_price = float(self.mean_std[self.time_step, 2])
+
+		# simulate new prices
+		self.sim_prices = self.sim_price()
 
 		observations = np.array([self.cur_date.day, self.cur_date.month, self.cur_date.year, self.cur_price, self.stor_lev, self.stor_val])
 		return observations

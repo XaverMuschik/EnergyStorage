@@ -3,6 +3,8 @@ import gym_energy_storage
 import gym
 from datetime import timedelta
 from datetime import datetime
+import numpy as np
+
 
 class TestEnv(unittest.TestCase):
 
@@ -38,6 +40,32 @@ class TestEnv(unittest.TestCase):
         self.assertEqual(env.stor_lev, 0.0)
         self.assertEqual(env.stor_val, 0.0)
 
+    # def test_price_sim(self):
+    #     np.random.RandomState(1304)
+    #     env = gym.make('energy_storage-v0')
+    #     env.reset()
+    #     sim_price_1 = env.sim_prices
+    #
+    #     np.random.RandomState(1304)
+    #     env.reset()
+    #     sim_price_2 = env.sim_prices
+    #     self.assertTrue(np.allclose(sim_price_1, sim_price_2))
+
+    def testNextStateUp(self):
+        env = gym.make('energy_storage-v0')
+        env.reset()
+        obs_act, reward_act, drop_act, action_act = env.step("up")
+        obs_expected = np.array([env.start_date.day,
+                                 env.start_date.month,
+                                 env.start_date.year,
+                                 env.cur_price,
+                                 env.max_in,
+                                 env.max_in
+                                 ])
+        self.assertTrue(np.allclose(obs_act, obs_expected))
+        self.assertEqual(reward_act, -env.max_in * env.cur_price)
+        self.assertEqual(drop_act, False)
+        self.assertEqual(action_act, "up")
 
 if __name__ == "__main__":
     unittest.main()
