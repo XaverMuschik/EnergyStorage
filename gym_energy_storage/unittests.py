@@ -60,12 +60,12 @@ class TestEnv(unittest.TestCase):
         obs_expected = np.array([env.start_date.day,
                                  env.start_date.month,
                                  env.start_date.year,
-                                 env.cur_price,
-                                 env.max_in * env.stor_eff,
-                                 env.sim_prices[0]
+                                 env.sim_prices[1],  # current price
+                                 env.max_in * env.stor_eff,  # storage level
+                                 env.sim_prices[0]  # storage value
                                  ])
         self.assertTrue(np.allclose(obs_act, obs_expected))
-        self.assertEqual(reward_act, -env.max_in * env.cur_price)
+        self.assertEqual(reward_act, -env.max_in * env.sim_prices[0])
         self.assertEqual(drop_act, False)
         self.assertEqual(action_act, 0)
 
@@ -74,12 +74,12 @@ class TestEnv(unittest.TestCase):
         obs_expected = np.array([env.start_date.day,
                                  env.start_date.month,
                                  env.start_date.year,
-                                 env.sim_prices[1],
+                                 env.sim_prices[2],
                                  2 * env.max_in * env.stor_eff,
                                  (env.sim_prices[0] + env.sim_prices[1]) / 2
                                  ])
         self.assertTrue(np.allclose(obs_act, obs_expected))
-        self.assertAlmostEqual(reward_act, -env.max_in * env.cur_price)
+        self.assertAlmostEqual(reward_act, -env.max_in * env.sim_prices[1])
         self.assertEqual(drop_act, False)
         self.assertEqual(action_act, 0)
 
@@ -96,7 +96,7 @@ class TestEnv(unittest.TestCase):
         obs_expected = np.array([env.start_date.day,
                                  env.start_date.month,
                                  env.start_date.year,
-                                 env.sim_prices[1],
+                                 env.sim_prices[2],
                                  max(env.max_in * env.stor_eff + env.max_wd, 0),
                                  env.sim_prices[0]
                                  ])

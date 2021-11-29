@@ -96,6 +96,8 @@ class EnergyStorageEnv(gym.Env):
 		for t in range(len(self.time_index)):
 			self._next_price(self.cur_price)
 			price_list.append(self.cur_price)
+
+		self.cur_price = float(self.mean_std[self.time_step, 2])  # reset self.cur_price to initial value
 		return np.array(price_list)
 
 	def _next_price(self, cur_price) -> None:
@@ -152,7 +154,6 @@ class EnergyStorageEnv(gym.Env):
 		"""
 		The agent takes a step in the environment.
 		"""
-		self.cur_price = self.sim_prices[self.time_step]
 
 		# update observations
 		num_action, new_stor_lev = self._storage_level_change(action)
@@ -160,23 +161,23 @@ class EnergyStorageEnv(gym.Env):
 		# update storage value
 		self._update_stor_val(num_action)
 
-		# update storage level
+		# update storage level and calculate reward (using old price)
 		if new_stor_lev == self.stor_lev:
 			# action = 2
 			# calculate reward
 			reward = self.penalty
-
 		else:
 			self.stor_lev = new_stor_lev
 			# calculate reward
 			reward = - num_action * self.cur_price
 
+		# update time period and price
+		self.time_step += 1
+		self.cur_price = self.sim_prices[self.time_step]
+
+
 		# generate list from observations for returning them to the agent
 		observations = np.array([self.cur_date.day, self.cur_date.month, self.cur_date.year, self.cur_price, self.stor_lev, self.stor_val])
-
-		# update time period
-		self.time_step += 1
-
 
 		if (self.cur_date.year == float(self.end_date.year)) & (self.cur_date.month == float(self.end_date.month)) & (self.cur_date.day == float(self.end_date.day)):
 			drop = True
