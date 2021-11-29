@@ -28,6 +28,7 @@ class EnergyStorageEnv(gym.Env):
 		self.observation_space = 6
 		self.action_space = ["up", "down", "cons"]
 		self.penalty = -0.5
+		self.sim_prices = self.sim_price()
 
 		# storage specifics
 		self.max_stor_lev = 10  # in MWh
@@ -87,23 +88,23 @@ class EnergyStorageEnv(gym.Env):
 
 		return jump
 
-	def next_price(self) -> None:
+	def sim_price(self):
+
+		"""
+		this function constructs the series of simulated prices
+		"""
+
+		price_list = []
+		for t in range(len(self.time_index)):
+			price_list.append(self._next_price())
+		return np.array(price_list)
+
+	def _next_price(self, cur_price) -> None:
 		""" simulate next price increment and update current date
 		"""
 
-		# get mean and std of current month
-		# month = self.cur_date.month
-		# year = self.cur_date.year
-		# month = self.mean_std[self.time_step, 0]
-		# year = self.mean_std[self.time_step, 1]
-
 		mean = self.mean_std[self.time_step, 2]
 		std = self.mean_std[self.time_step, 3]
-
-		# mean = float(self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "Mean"]) # TODO: slice based on numpy index (keep track of starting and current month)
-		# std = float(self.mean_std.loc[(self.mean_std["year"] == year) & (self.mean_std["month"] == month), "estimated.monthly.std"])
-		# print(f"Mean: {mean}")
-		# print(f"std: {std}")
 
 		# generate noise
 		noise = np.random.normal(loc=0, scale=std, size=1)
@@ -111,15 +112,9 @@ class EnergyStorageEnv(gym.Env):
 
 		jump = self._generate_jump(mean)
 
-		price_inc = float(self.est_mean_rev * (mean - self.cur_price) + noise + jump)
-		# print(f"price inc {price_inc}")
-		# the price process was estimated on hourly data
-		# as price increments are hourly, the "dt" part is set to one
+		price_inc = float(self.est_mean_rev * (mean - cur_price) + noise + jump)
 
-		# update observations
-		self.cur_price += price_inc
-		# self.cur_date += timedelta(hours=1)
-		self.time_step += 1
+		return price_inc + cur_price
 
 	def _storage_level_change(self, action):
 		""" this function transforms the discrete action into a change in the level of the storage
@@ -154,23 +149,6 @@ class EnergyStorageEnv(gym.Env):
 
 		"""
 		The agent takes a step in the environment.
-
-		Parameters
-		----------
-		action : change in storage level [up, down, no_action] 
-				(bang-bang property of these kind of problems well known, 
-				hence discretization possible)
-
-		Returns
-		-------
-		ob, reward, episode_over
-			ob : List[float]
-				an environment-specific object representing your observation of
-				the environment.
-			reward : float
-				amount of reward achieved by the previous action. The scale
-				varies between environments, but the goal is always to increase
-				your total reward.
 		"""
 		
 		# update observations
@@ -180,32 +158,29 @@ class EnergyStorageEnv(gym.Env):
 		self._update_stor_val(num_action)
 
 		# update storage level
-		if self.stor_lev == new_stor_lev:
-			action = 2
-
+		if new_stor_lev == self.stor_lev:
+			# action = 2
 			# calculate reward
 			reward = self.penalty
-			# self.cum_reward += reward
+
 		else:
 			self.stor_lev = new_stor_lev
 			# calculate reward
 			reward = - num_action * self.cur_price
 
 		# update current price after the action was taken
-		self.next_price()
+		self.cur_price = self.sim_prices[self.time_step]
+		self.time_step += 1
 
 		# generate list from observations for returning them to the agent
-		year = self.mean_std[self.time_step, 1]
-		month = self.mean_std[self.time_step, 0]
-
 		observations = np.array([self.cur_date.day, self.cur_date.month, self.cur_date.year, self.cur_price, self.stor_lev, self.stor_val])
 
-		if (year == float(self.end_date.year)) & (month == float(self.end_date.month)):
+		if (self.cur_date.year == float(self.end_date.year)) & (self.cur_date.month == float(self.end_date.month)) & (self.cur_date.day == float(self.end_date.day)):
 			drop = True
 		else:
 			drop = False
 
-		return observations, reward, drop, action  # self.cum_reward
+		return observations, reward, drop, action
 
 	def reset(self):
 
@@ -220,10 +195,7 @@ class EnergyStorageEnv(gym.Env):
 		self.stor_val = 0.0
 
 		# set price to initial price
-		self.cur_price = self.mean_std[self.time_step, 2]
-
-		# set cum_reward to zero
-		# self.cum_reward = 0.0
+		self.cur_price = self.sim_prices[1, 1]
 
 		observations = np.array([self.cur_date.day, self.cur_date.month, self.cur_date.year, self.cur_price, self.stor_lev, self.stor_val])
 		return observations
@@ -245,8 +217,8 @@ if __name__ == "__main__":
 
 	import timeit
 
-	result = timeit.timeit("env.next_price()", globals=globals(), number=5000) / 5000
-	print(f"avg time required for _next_price: {result}")
+	# result = timeit.timeit("env.next_price()", globals=globals(), number=5000) / 5000
+	# print(f"avg time required for _next_price: {result}")
 
 	env.reset()
 
