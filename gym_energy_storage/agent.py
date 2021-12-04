@@ -7,6 +7,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical  #, normalize
+import plot_learning_outcome
 
 import os
 import tensorflow as tf
@@ -142,6 +143,11 @@ class Agent:
             # if reward_mean > 500:
             #     break
 
+    def plot(self):
+        """ plot result of training"""
+        plot = plot_learning_result(stor_val=40, model=self.model)
+        plot.main()
+
     def play(self, num_episodes: int, render: bool = False):
         """Test the trained agent."""
         for episode in range(num_episodes):
@@ -165,6 +171,7 @@ if __name__ == "__main__":
     # print(agent.actions)
 
     agent.train(percentile=70.0, num_iterations=200, num_episodes=60)
+    agent.plot()
     agent.play(num_episodes=10)
 
     # import cProfile

@@ -6,7 +6,7 @@ from matplotlib.table import Table
 
 class plot_learning_result():
 
-    def __init__(self, time_step=1, stor_min=0, stor_max=1, price_min=0, price_max=100, stor_val, model):
+    def __init__(self, stor_val, model, time_step=1, stor_min=0, stor_max=10, price_min=0, price_max=100):
         """ initialize class with:
             - time-step
             - min and max storage levels to be plotted
@@ -17,7 +17,7 @@ class plot_learning_result():
         """
 
         self.time_step = time_step
-        self.stor_grid = np.arange(start=stor_min, stop=stor_max, step=10)
+        self.stor_grid = np.arange(start=stor_min, stop=stor_max, step=1)
         self.price_grid = np.arange(start=price_min, stop=price_max, step=10)
         self.stor_val = stor_val
         self.colors = {'up': 'forestgreen', 'cons': 'gold', 'down': 'darkorange'}
