@@ -44,11 +44,8 @@ class Agent:
             return (arg - min_arg) / (max_arg - min_arg)
 
         normalized = state.copy()
-        normalized[0, 0] = scale(1.0, 31.0, state[0, 0])
-        normalized[0, 1] = scale(1.0, 12.0, state[0, 1])
-        normalized[0, 2] = scale(2015.0, 2030.0, state[0, 2])
-        normalized[0, 3] = scale(-200.0, 200.0, state[0, 3])
-        normalized[0, 5] = scale(-200.0, 200.0, state[0, 5])
+        normalized[0, 1] = scale(-200.0, 200.0, state[0, 1])  # normlize price
+        normalized[0, 3] = scale(-200.0, 200.0, state[0, 3])  # normalize storage value
         return normalized
 
     def get_model(self):
