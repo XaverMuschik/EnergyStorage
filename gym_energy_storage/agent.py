@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical  #, normalize
-import plot_learning_outcome
+from gym_energy_storage.plot_learning_outcome import plot_learning_result
 
 import os
 import tensorflow as tf
@@ -133,6 +133,7 @@ class Agent:
             x_train = self.normalize(x_train)
             # print("fitting model")
             self.model.fit(x=x_train, y=y_train, verbose=0)
+            self.plot()
             # print("model fitted")
             reward_mean = np.mean(rewards)
             print(f"Iteration: {iteration+1} of number iterations {num_iterations}, Reward mean: {reward_mean}, reward bound: {reward_bound}")
