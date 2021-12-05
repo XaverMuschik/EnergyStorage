@@ -71,9 +71,9 @@ class Agent:
             return action
         else:
             state = self.normalize(np.asarray(state).reshape(1, -1))  # [4,]< => [1, 4]
-            action = self.model(state).numpy()[0]
+            action_prob = self.model(state).numpy()[0]
             # print(action)
-            action = np.random.choice(env.action_space, p=action)  # choice([0, 1], [0.5044534  0.49554658])
+            action = np.random.choice(env.action_space, p=action_prob)  # choice([0, 1], [0.5044534  0.49554658])
             return action
 
     def get_samples(self, num_episodes: int):

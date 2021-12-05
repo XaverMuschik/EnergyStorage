@@ -27,8 +27,8 @@ class EnergyStorageEnv(gym.Env):
 		self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
 		self._get_spot_price_params()  # might be necessary to specify path here?
 		self.observation_space = 4
-		self.action_space = ["up", "down", "cons"]
-		self.penalty = -20
+		self.action_space = [0, 1, 2]  # ["up", "down", "cons"]
+		self.penalty = -30
 		self.cur_price = float(self.mean_std[self.time_step, 2])
 		self.sim_prices = self.sim_price()
 
@@ -36,7 +36,7 @@ class EnergyStorageEnv(gym.Env):
 		self.max_stor_lev = 10  # in MWh
 		self.max_wd = -2.5  # in MW
 		self.max_in = 1.5  # in MW
-		self.stor_eff = 0.9  # 10% loss for each conversion
+		self.stor_eff = 1.0  #  0.9  # 10% loss for each conversion
 		self.round_acc = self.max_stor_lev / 1000
 
 		# set initial parameters for price, storage level, storage value, and cumulative reward
@@ -166,6 +166,7 @@ class EnergyStorageEnv(gym.Env):
 			# action = 2
 			# calculate reward
 			reward = self.penalty
+			action = 2
 		else:
 			self.stor_lev = new_stor_lev
 			# calculate reward
@@ -220,7 +221,6 @@ if __name__ == "__main__":
 	import gym_energy_storage
 	env = gym.make('energy_storage-v0')
 	env.reset()
-	env.step("up")
 	# cProfile.run('env.next_price')
 
 	import timeit
@@ -230,8 +230,8 @@ if __name__ == "__main__":
 
 	env.reset()
 
-	result = timeit.timeit("env.step('up')", globals=globals(), number=5000) / 5000
-	print(f"avg time required for step: {result}")
+	# result = timeit.timeit("env.step('up')", globals=globals(), number=5000) / 5000
+	# print(f"avg time required for step: {result}")
 
 	# result = timeit.timeit('float(env.mean_std.loc[(env.mean_std["year"] == 2015) & (env.mean_std["month"] == 6), "Mean"])', globals=globals(), number=10000) / 10000
 	# print(f"avg time required for step: {result}")
