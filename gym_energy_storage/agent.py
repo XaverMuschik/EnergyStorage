@@ -109,15 +109,15 @@ class Agent:
             if reward >= reward_bound:
                 observation = [step[0] for step in episode]
                 action = [step[1] for step in episode]
-                def _categorize_actions(x):
-                    """ uses same order as env.action_space has """
-                    if x == 'up':
-                        return 0
-                    elif x == 'down':
-                        return 1
-                    else:
-                        return 2
-                action = map(_categorize_actions, action)
+                # def _categorize_actions(x):
+                #     """ uses same order as env.action_space has """
+                #     if x == 'up':
+                #         return 0
+                #     elif x == 'down':
+                #         return 1
+                #     else:
+                #         return 2
+                # action = map(_categorize_actions, action)
                 x_train.extend(observation)
                 y_train.extend(action)
         x_train = np.asarray(x_train)
