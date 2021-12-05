@@ -78,7 +78,7 @@ class plot_learning_result():
                         edgecolor='none', facecolor='none')
         ax.add_table(tb)
         # return fig
-        name = outcome_learning + time.strftime("%Y%m%d-%H%M%S")
-        file = os.path.join("Figures_Outcome_Learning", "power_price_model.json")
+        name = "outcome_learning_" + time.strftime("%Y%m%d-%H%M%S") + ".png"
+        file = os.path.join("Figures_Outcome_Learning", name)
         fig.savefig(file)
-        # plt.close(fig)
+        plt.close(fig)
