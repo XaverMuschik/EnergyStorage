@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas
+import os
+import time
 
 from matplotlib.table import Table
 
@@ -75,4 +77,8 @@ class plot_learning_result():
             tb.add_cell(-1, j, width, height / 2, text=fmt.format(j), loc='center',
                         edgecolor='none', facecolor='none')
         ax.add_table(tb)
-        return fig
+        # return fig
+        name = outcome_learning + time.strftime("%Y%m%d-%H%M%S")
+        file = os.path.join("Figures_Outcome_Learning", "power_price_model.json")
+        fig.savefig(file)
+        # plt.close(fig)
