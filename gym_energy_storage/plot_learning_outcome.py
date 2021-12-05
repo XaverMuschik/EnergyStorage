@@ -37,6 +37,11 @@ class plot_learning_result():
         fig.set_figheight(8)  # scaling of graphic is done here!
         fig.set_figwidth(15)  # scaling of graphic is done here!
         ax.set_axis_off()
+        # ax.title.set_text('Plot probs for up/ down/ cons. y: price')  # add title
+        ax.xaxis.set_label_position('top')
+        # ax.set_xlabel('storage level')
+        ax.set_title('Plot probs for up/ down/ cons. x: storage level, y: price')
+        # ax.set_ylabel('price')
         tb = Table(ax, bbox=[0, 0, 1, 1])
 
         nrows, ncols = data.shape
