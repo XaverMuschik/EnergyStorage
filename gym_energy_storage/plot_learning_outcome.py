@@ -8,7 +8,7 @@ from matplotlib.table import Table
 
 class plot_learning_result():
 
-    def __init__(self, stor_val, model, time_step=1, stor_min=0, stor_max=10, price_min=0, price_max=100):
+    def __init__(self, stor_val, model, time_step=300, stor_min=0, stor_max=10, price_min=0, price_max=100):
         """ initialize class with:
             - time-step
             - min and max storage levels to be plotted
