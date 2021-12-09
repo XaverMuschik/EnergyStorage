@@ -37,8 +37,8 @@ class Agent:
         self.actions = len(self.env.action_space)
         self.load_model = load_model
         self.model = self.get_model()
-        self.epsilon = 0.05
-        self.epsilon_decay = 1 # 0.98
+        self.epsilon = 0.3
+        self.epsilon_decay = 0.98  # 0.98
 
     def normalize(self, state):
         def scale(min_arg, max_arg, arg):
@@ -184,11 +184,11 @@ class Agent:
 
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
-    agent = Agent(env, True)
+    agent = Agent(env, False)
     # print(agent.observations)
     # print(agent.actions)
 
-    agent.train(percentile=80.0, num_iterations=100, num_episodes=100)
+    agent.train(percentile=80.0, num_iterations=500, num_episodes=100)
     agent.plot()
     agent.play(num_episodes=10)
 
