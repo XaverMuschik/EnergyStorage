@@ -35,10 +35,10 @@ class Agent:
         self.env = env
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
-        self.model = self.get_model()
-        self.epsilon = 0.3
-        self.epsilon_decay = 0.98
         self.load_model = load_model
+        self.model = self.get_model()
+        self.epsilon = 0.05
+        self.epsilon_decay = 1 # 0.98
 
     def normalize(self, state):
         def scale(min_arg, max_arg, arg):
@@ -66,7 +66,9 @@ class Agent:
             )
             return model
         else:
-            return self._load_model()
+            model = self._load_model()
+            model.summary()
+            return model
 
     def get_action(self, state: np.ndarray):
         """Based on the state, get an action."""
@@ -144,7 +146,7 @@ class Agent:
             self.epsilon *= self.epsilon_decay
             # if reward_mean > 500:
             #     break
-            self._save_model()
+        self._save_model()
 
     def _save_model(self):
         path = "../saved_model"
@@ -182,11 +184,11 @@ class Agent:
 
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
-    agent = Agent(env)
+    agent = Agent(env, True)
     # print(agent.observations)
     # print(agent.actions)
 
-    agent.train(percentile=70.0, num_iterations=200, num_episodes=60)
+    agent.train(percentile=80.0, num_iterations=100, num_episodes=100)
     agent.plot()
     agent.play(num_episodes=10)
 
