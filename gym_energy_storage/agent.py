@@ -24,7 +24,7 @@ import time
 class Agent:
     """Agent class for the cross-entropy learning algorithm."""
 
-    def __init__(self, env):
+    def __init__(self, env, load_model=False):
         """Set up the environment, the neural network and member variables.
 
         Parameters
@@ -36,8 +36,9 @@ class Agent:
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
         self.model = self.get_model()
-        self.epsilon = 0.8
+        self.epsilon = 0.3
         self.epsilon_decay = 0.98
+        self.load_model = load_model
 
     def normalize(self, state):
         def scale(min_arg, max_arg, arg):
@@ -50,19 +51,22 @@ class Agent:
 
     def get_model(self):
         """Returns a keras NN model."""
-        model = Sequential()
-        model.add(Dense(units=100, input_dim=self.observations))
-        model.add(Activation("sigmoid"))  # relu sigmoid
-        model.add(Dense(50, activation="sigmoid"))  # sigmoid relu
-        model.add(Dense(units=self.actions))  # Output: Action [L, R]
-        model.add(Activation("softmax"))
-        model.summary()
-        model.compile(
-            optimizer=Adam(learning_rate=0.01),  # lr=0.001
-            loss="categorical_crossentropy",
-            metrics=["accuracy"],
-        )
-        return model
+        if self.load_model == False:
+            model = Sequential()
+            model.add(Dense(units=100, input_dim=self.observations))
+            model.add(Activation("sigmoid"))  # relu sigmoid
+            model.add(Dense(50, activation="sigmoid"))  # sigmoid relu
+            model.add(Dense(units=self.actions))  # Output: Action [L, R]
+            model.add(Activation("softmax"))
+            model.summary()
+            model.compile(
+                optimizer=Adam(learning_rate=0.01),  # lr=0.001
+                loss="categorical_crossentropy",
+                metrics=["accuracy"],
+            )
+            return model
+        else:
+            return self._load_model()
 
     def get_action(self, state: np.ndarray):
         """Based on the state, get an action."""
@@ -140,6 +144,20 @@ class Agent:
             self.epsilon *= self.epsilon_decay
             # if reward_mean > 500:
             #     break
+            self._save_model()
+
+    def _save_model(self):
+        path = "../saved_model"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        self.model.save('saved_model/my_model.h5')
+
+    def _load_model(self):
+        path = "../saved_model"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        model = tf.keras.models.load_model('saved_model/my_model.h5')
+        return model
 
     def plot(self):
         """ plot result of training"""
