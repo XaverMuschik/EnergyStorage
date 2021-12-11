@@ -12,7 +12,7 @@ class TestEnv(unittest.TestCase):
         env = gym.make('energy_storage-v0')
         env.reset()
         self.assertEqual(env.cur_date, env.start_date)
-        env.step("up")
+        env.step(0)
         new_date = env.start_date + timedelta(hours=1)
         self.assertEqual(env.cur_date, new_date)
 

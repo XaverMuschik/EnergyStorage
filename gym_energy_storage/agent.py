@@ -163,7 +163,7 @@ class Agent:
 
     def plot(self):
         """ plot result of training"""
-        plot = plot_learning_result(stor_val=40, model=self.model)
+        plot = plot_learning_result(stor_val=40, mean_price=40, model=self.model)
         plot.main()
 
     def play(self, num_episodes: int, render: bool = False):

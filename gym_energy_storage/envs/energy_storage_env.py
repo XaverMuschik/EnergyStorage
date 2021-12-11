@@ -4,6 +4,7 @@ import gym
 import json
 import pandas as pd
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 from datetime import datetime
 from datetime import timedelta
 import os
@@ -26,11 +27,13 @@ class EnergyStorageEnv(gym.Env):
 		self.end_date = datetime.fromisoformat("2015-06-02")
 		self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
 		self._get_spot_price_params()  # might be necessary to specify path here?
-		self.observation_space = 4
+		self.observation_space = 5
 		self.action_space = [0, 1, 2]  # ["up", "down", "cons"]
 		self.penalty = -5
 		self.cur_price = float(self.mean_std[self.time_step, 2])
 		self.sim_prices = self.sim_price()
+		length_window = 4
+		self.mean_prices = self._mean_price(length_window)
 
 		# storage specifics
 		self.max_stor_lev = 10  # in MWh
@@ -117,13 +120,13 @@ class EnergyStorageEnv(gym.Env):
 		self.cur_price = float(self.mean_std[self.time_step, 2])  # reset self.cur_price to initial value
 		return np.array(price_list)
 
-	def _mean_price(self):
-		v = sliding_window_view(self.sim_prices, 24)
+	def _mean_price(self, length_window):
+		v = sliding_window_view(self.sim_prices, length_window)
 		moving_averages = v.mean(axis=-1)
 		num_first_values = self.sim_prices.shape[0] - moving_averages.shape[0]
 		first_values = []
 		for val in range(num_first_values):
-			first_values.append(self.sim_prices[0:val, 0].mean())
+			first_values.append(self.sim_prices[0:(val+1)].mean())
 		return np.append(first_values, moving_averages)
 		
 	def _storage_level_change(self, action):
@@ -187,7 +190,7 @@ class EnergyStorageEnv(gym.Env):
 
 
 		# generate list from observations for returning them to the agent
-		observations = np.array([self.time_step, self.cur_price, self.stor_lev, self.stor_val])
+		observations = np.array([self.time_step, self.cur_price, self.stor_lev, self.stor_val, self.mean_prices[self.time_step]])
 
 		if (self.cur_date.year == self.end_date.year) & (self.cur_date.month == self.end_date.month) & (self.cur_date.day == self.end_date.day):
 			drop = True
@@ -215,7 +218,7 @@ class EnergyStorageEnv(gym.Env):
 		# simulate new prices
 		self.sim_prices = self.sim_price()
 
-		observations = np.array([self.time_step, self.cur_price, self.stor_lev, self.stor_val])
+		observations = np.array([self.time_step, self.cur_price, self.stor_lev, self.stor_val, self.cur_price])
 		return observations
 
 	def render(self, mode: str = "human", close: bool = False) -> None:

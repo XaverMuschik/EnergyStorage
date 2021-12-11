@@ -8,7 +8,7 @@ from matplotlib.table import Table
 
 class plot_learning_result():
 
-    def __init__(self, stor_val, model, time_step=300, stor_min=0, stor_max=10, price_min=0, price_max=100):
+    def __init__(self, stor_val, mean_price, model, time_step=300, stor_min=0, stor_max=10, price_min=0, price_max=100):
         """ initialize class with:
             - time-step
             - min and max storage levels to be plotted
@@ -22,6 +22,7 @@ class plot_learning_result():
         self.stor_grid = np.arange(start=stor_min, stop=stor_max, step=1)
         self.price_grid = np.arange(start=price_min, stop=price_max, step=10)
         self.stor_val = stor_val
+        self.mean_price = mean_price
         self.colors = {'up': 'forestgreen', 'cons': 'gold', 'down': 'darkorange'}
         self.model = model
 
@@ -48,7 +49,7 @@ class plot_learning_result():
         width, height = 1.0 / ncols, 1.0 / nrows / 2.0
 
         def calc_values(time_step, price, stor_vol):
-            observations = np.asarray([time_step, price, stor_vol, self.stor_val]).reshape(1, -1)
+            observations = np.asarray([time_step, price, stor_vol, self.stor_val, self.mean_price]).reshape(1, -1)
             return self.model(observations).numpy()[0]
 
         # Add cells
