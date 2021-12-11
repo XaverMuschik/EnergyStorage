@@ -9,6 +9,7 @@ import numpy as np
 from build_network import DQN  # TODO: check if this works
 import gym
 import gym_energy_storage
+from gym_energy_storage.plot_learning_outcome import plot_learning_result
 
 MODEL_PATH = os.path.join("../saved_model", "dqn_model.h5")
 
@@ -111,7 +112,7 @@ class Agent:
 
     def plot(self):
         """ plot result of training"""
-        plot = plot_learning_result(stor_val=40, mean_price=40, model=self.dqn)
+        plot = plot_learning_result(stor_val=40, mean_price=40, model=self.dqn, max_stor=env.max_stor_lev, len_period=env.len_period)
         plot.main()
 
     def play(self, num_episodes: int, render: bool = True):

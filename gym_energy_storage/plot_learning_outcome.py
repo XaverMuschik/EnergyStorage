@@ -8,7 +8,7 @@ from matplotlib.table import Table
 
 class plot_learning_result():
 
-    def __init__(self, stor_val, mean_price, model, time_step=300, stor_min=0, stor_max=10, price_min=0, price_max=100):
+    def __init__(self, stor_val, mean_price, model, len_period, max_stor, time_step=300, stor_min=0, stor_max=10, price_min=0, price_max=100):
         """ initialize class with:
             - time-step
             - min and max storage levels to be plotted
@@ -25,6 +25,8 @@ class plot_learning_result():
         self.mean_price = mean_price
         self.colors = {'up': 'forestgreen', 'cons': 'gold', 'down': 'darkorange'}
         self.model = model
+        self.len_period = len_period
+        self.max_stor = max_stor
 
     def main(self):
 
@@ -38,9 +40,9 @@ class plot_learning_result():
             return (arg - min_arg) / (max_arg - min_arg)
 
         normalized = state.copy()
-        normalized[0, 0] = scale(0.0, env.len_period, state[0, 0])  # normalize time step
+        normalized[0, 0] = scale(0.0, self.len_period, state[0, 0])  # normalize time step
         normalized[0, 1] = scale(-200.0, 200.0, state[0, 1])  # normlize price
-        normalized[0, 2] = scale(0.0, env.max_stor_lev, state[0, 1])  # normlize storage level
+        normalized[0, 2] = scale(0.0, self.max_stor, state[0, 1])  # normlize storage level
         normalized[0, 3] = scale(-200.0, 200.0, state[0, 3])  # normalize storage value
         normalized[0, 4] = scale(-100.0, 100.0, state[0, 4])  # normalize mean price
         return normalized
