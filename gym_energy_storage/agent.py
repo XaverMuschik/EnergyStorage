@@ -46,7 +46,7 @@ class Agent:
 
         normalized = state.copy()
         normalized[0, 1] = scale(-200.0, 200.0, state[0, 1])  # normlize price
-        normalized[0, 3] = scale(-200.0, 200.0, state[0, 3])  # normalize storage value
+        # normalized[0, 3] = scale(-200.0, 200.0, state[0, 3])  # normalize storage value
         return normalized
 
     def get_model(self):

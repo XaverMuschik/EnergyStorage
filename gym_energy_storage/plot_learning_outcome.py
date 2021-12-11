@@ -48,7 +48,8 @@ class plot_learning_result():
         width, height = 1.0 / ncols, 1.0 / nrows / 2.0
 
         def calc_values(time_step, price, stor_vol):
-            observations = np.asarray([time_step, price, stor_vol, self.stor_val]).reshape(1, -1)
+            # observations = np.asarray([time_step, price, stor_vol, self.stor_val]).reshape(1, -1)
+            observations = np.asarray([time_step, price, stor_vol]).reshape(1, -1)
             return self.model(observations).numpy()[0]
 
         # Add cells

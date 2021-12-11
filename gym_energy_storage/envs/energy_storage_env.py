@@ -26,7 +26,7 @@ class EnergyStorageEnv(gym.Env):
 		self.end_date = datetime.fromisoformat("2015-06-02")
 		self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
 		self._get_spot_price_params()  # might be necessary to specify path here?
-		self.observation_space = 4
+		self.observation_space = 3  # 4 - storage value omitted
 		self.action_space = [0, 1, 2]  # ["up", "down", "cons"]
 		self.penalty = -5
 		self.cur_price = float(self.mean_std[self.time_step, 2])
@@ -159,7 +159,7 @@ class EnergyStorageEnv(gym.Env):
 		num_action, new_stor_lev = self._storage_level_change(action)
 
 		# update storage value
-		self._update_stor_val(num_action)
+		# self._update_stor_val(num_action)
 
 		# update storage level and calculate reward (using old price)
 		if new_stor_lev == self.stor_lev:
@@ -178,7 +178,7 @@ class EnergyStorageEnv(gym.Env):
 
 
 		# generate list from observations for returning them to the agent
-		observations = np.array([self.time_step, self.cur_price, self.stor_lev, self.stor_val])
+		observations = np.array([self.time_step, self.cur_price, self.stor_lev])  # , self.stor_val])
 
 		if (self.cur_date.year == self.end_date.year) & (self.cur_date.month == self.end_date.month) & (self.cur_date.day == self.end_date.day):
 			drop = True
@@ -206,7 +206,7 @@ class EnergyStorageEnv(gym.Env):
 		# simulate new prices
 		self.sim_prices = self.sim_price()
 
-		observations = np.array([self.time_step, self.cur_price, self.stor_lev, self.stor_val])
+		observations = np.array([self.time_step, self.cur_price, self.stor_lev])  # .stor_val])
 		return observations
 
 	def render(self, mode: str = "human", close: bool = False) -> None:
