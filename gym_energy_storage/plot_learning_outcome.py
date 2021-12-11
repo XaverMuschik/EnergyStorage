@@ -32,6 +32,18 @@ class plot_learning_result():
         self.checkerboard_table(data)
         plt.show()
 
+    def normalize(self, state):
+        """ normalizes observations to interval [0,1] """
+        def scale(min_arg, max_arg, arg):
+            return (arg - min_arg) / (max_arg - min_arg)
+
+        normalized = state.copy()
+        normalized[0, 0] = scale(0.0, env.len_period, state[0, 0])  # normalize time step
+        normalized[0, 1] = scale(-200.0, 200.0, state[0, 1])  # normlize price
+        normalized[0, 2] = scale(0.0, env.max_stor_lev, state[0, 1])  # normlize storage level
+        normalized[0, 3] = scale(-200.0, 200.0, state[0, 3])  # normalize storage value
+        normalized[0, 4] = scale(-100.0, 100.0, state[0, 4])  # normalize mean price
+        return normalized
 
     def checkerboard_table(self, data, fmt='{:.0f}'):
         fig, ax = plt.subplots()
@@ -50,7 +62,7 @@ class plot_learning_result():
 
         def calc_values(time_step, price, stor_vol):
             observations = np.asarray([time_step, price, stor_vol, self.stor_val, self.mean_price]).reshape(1, -1)
-            return self.model(observations).numpy()[0]
+            return self.model(self.normalize(observations)).numpy()[0]
 
         # Add cells
         for stor_lev in data.columns:

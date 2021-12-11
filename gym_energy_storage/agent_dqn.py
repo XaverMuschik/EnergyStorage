@@ -20,20 +20,20 @@ class Agent:
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
         # DQN Agent Variables
-        self.replay_buffer_size = 50_000  # ToDo: tune hyperparameter
+        self.replay_buffer_size = 10_000  # ToDo: tune hyperparameter
         self.train_start = 1_000  # ToDo: tune hyperparameter
         self.memory: Deque = collections.deque(maxlen=self.replay_buffer_size)
         self.gamma = 1  # 0.95
         self.epsilon = 1.0
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon_min = 0.05
+        self.epsilon_decay = 0.999
         # DQN Network Variables
         self.state_shape = self.observations
         self.learning_rate = 1e-3
         self.dqn = DQN(self.state_shape, self.actions, self.learning_rate)
         self.target_dqn = DQN(self.state_shape, self.actions, self.learning_rate)
         self.target_dqn.update_model(self.dqn)
-        self.batch_size = 32
+        self.batch_size = 128
 
     def get_action(self, state: np.ndarray):
         if np.random.rand() <= self.epsilon:
@@ -107,6 +107,12 @@ class Agent:
                 q_values[i][a] = rewards[i] + self.gamma * np.max(q_values_next[i])
 
         self.dqn.fit(self.normalize(states), q_values)
+        self.plot()
+
+    def plot(self):
+        """ plot result of training"""
+        plot = plot_learning_result(stor_val=40, mean_price=40, model=self.dqn)
+        plot.main()
 
     def play(self, num_episodes: int, render: bool = True):
         self.dqn.load_model(MODEL_PATH)

@@ -30,7 +30,7 @@ class EnergyStorageEnv(gym.Env):
 		self._get_spot_price_params()  # might be necessary to specify path here?
 		self.observation_space = 5
 		self.action_space = [0, 1, 2]  # ["up", "down", "cons"]
-		self.penalty = -10
+		self.penalty = -25
 		self.cur_price = float(self.mean_std[self.time_step, 2])
 		self.sim_prices = self.sim_price()
 		length_window = 4
