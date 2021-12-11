@@ -39,7 +39,7 @@ class Agent:
         if np.random.rand() <= self.epsilon:
             return np.random.randint(self.actions)  # ToDo: check if this works or if set needs to be provided
         else:
-            return np.argmax(self.dqn(state))
+            return np.argmax(self.dqn(self.normalize(state)))
 
     def train(self, num_episodes: int):
         last_rewards: Deque = collections.deque(maxlen=5)
@@ -95,8 +95,8 @@ class Agent:
         states = np.concatenate(states).astype(np.float32)
         states_next = np.concatenate(states_next).astype(np.float32)
 
-        q_values = self.dqn(states)
-        q_values_next = self.target_dqn(states_next)
+        q_values = self.dqn(self.normalize(states))
+        q_values_next = self.target_dqn(self.normalize(states_next))
 
         for i in range(self.batch_size):
             a = actions[i]
@@ -130,6 +130,6 @@ class Agent:
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
     agent = Agent(env)
-    # agent.train(num_episodes=200)
+    agent.train(num_episodes=200)
     # input("Play?")
-    agent.play(num_episodes=30, render=True)
+    # agent.play(num_episodes=30, render=True)
