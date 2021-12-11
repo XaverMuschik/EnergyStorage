@@ -26,6 +26,7 @@ class EnergyStorageEnv(gym.Env):
 		self.time_step = 0  # variable used for slicing mean and var values
 		self.end_date = datetime.fromisoformat("2015-06-02")
 		self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
+		self.len_period = len(self.time_index)
 		self._get_spot_price_params()  # might be necessary to specify path here?
 		self.observation_space = 5
 		self.action_space = [0, 1, 2]  # ["up", "down", "cons"]
