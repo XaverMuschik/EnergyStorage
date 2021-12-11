@@ -23,17 +23,17 @@ class TestEnv(unittest.TestCase):
         self.assertEqual(env.start_date, datetime.fromisoformat("2015-06-01"))  # date is hardcoded
         self.assertEqual(env.cur_date, datetime.fromisoformat("2015-06-01"))  # date is hardcoded
         self.assertEqual(env.time_step, 0)
-        self.assertEqual(env.end_date, datetime.fromisoformat("2015-07-01"))  # date hardcoded
-        self.assertEqual(env.observation_space, 6)
-        self.assertEqual(env.action_space, ["up", "down", "cons"])
-        self.assertEqual(env.penalty, -0.5)
+        # self.assertEqual(env.end_date, datetime.fromisoformat("2015-07-01"))  # date hardcoded
+        self.assertEqual(env.observation_space, 4)
+        self.assertEqual(env.action_space, [0, 1, 2])
+        # self.assertEqual(env.penalty, -0.5)
         self.assertEqual(env.cur_price, float(env.mean_std[env.time_step, 2]))
 
         # storage specifics
         self.assertEqual(env.max_stor_lev, 10)  # in MWh
         self.assertEqual(env.max_wd, -2.5)  # in MW
         self.assertEqual(env.max_in, 1.5)  # in MW
-        self.assertEqual(env.stor_eff, 0.9)  # 10% loss for each conversion
+        self.assertEqual(env.stor_eff, 1)  # 10% loss for each conversion
         self.assertEqual(env.round_acc, env.max_stor_lev / 1000)
 
         # set initial parameters for price, storage level, storage value, and cumulative reward
@@ -57,9 +57,7 @@ class TestEnv(unittest.TestCase):
 
         # step 1
         obs_act, reward_act, drop_act, action_act = env.step(0)
-        obs_expected = np.array([env.start_date.day,
-                                 env.start_date.month,
-                                 env.start_date.year,
+        obs_expected = np.array([1,
                                  env.sim_prices[1],  # current price
                                  env.max_in * env.stor_eff,  # storage level
                                  env.sim_prices[0]  # storage value
@@ -71,9 +69,7 @@ class TestEnv(unittest.TestCase):
 
         # step 2
         obs_act, reward_act, drop_act, action_act = env.step(0)
-        obs_expected = np.array([env.start_date.day,
-                                 env.start_date.month,
-                                 env.start_date.year,
+        obs_expected = np.array([2,
                                  env.sim_prices[2],
                                  2 * env.max_in * env.stor_eff,
                                  (env.sim_prices[0] + env.sim_prices[1]) / 2
@@ -93,9 +89,7 @@ class TestEnv(unittest.TestCase):
 
         # step down
         obs_act, reward_act, drop_act, action_act = env.step(1)
-        obs_expected = np.array([env.start_date.day,
-                                 env.start_date.month,
-                                 env.start_date.year,
+        obs_expected = np.array([2,
                                  env.sim_prices[2],
                                  max(env.max_in * env.stor_eff + env.max_wd, 0),
                                  env.sim_prices[0]  # storage value unchanged after wd
@@ -112,9 +106,7 @@ class TestEnv(unittest.TestCase):
 
         # step cons
         obs_act, reward_act, drop_act, action_act = env.step(2)
-        obs_expected = np.array([env.start_date.day,
-                                 env.start_date.month,
-                                 env.start_date.year,
+        obs_expected = np.array([1,
                                  env.sim_prices[1],
                                  0,
                                  0
@@ -138,6 +130,10 @@ class TestEnv(unittest.TestCase):
         print(env.cur_date)
         _, _, drop_act, _ = env.step(0)
         self.assertEqual(drop_act, True)
+
+    def testMovingAveragePrice(self):
+        pass
+
 
 if __name__ == "__main__":
     unittest.main()

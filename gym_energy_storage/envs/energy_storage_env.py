@@ -85,21 +85,6 @@ class EnergyStorageEnv(gym.Env):
 
 		return jump
 
-	def sim_price(self):
-
-		"""
-		this function constructs the series of simulated prices
-		"""
-
-		price_list = []
-		price_list.append(self.cur_price)
-		for t in range(len(self.time_index)):
-			self._next_price(self.cur_price)
-			price_list.append(self.cur_price)
-
-		self.cur_price = float(self.mean_std[self.time_step, 2])  # reset self.cur_price to initial value
-		return np.array(price_list)
-
 	def _next_price(self, cur_price) -> None:
 		""" simulate next price increment and update current date
 		"""
@@ -117,6 +102,30 @@ class EnergyStorageEnv(gym.Env):
 
 		self.cur_price = price_inc + cur_price
 
+	def sim_price(self):
+
+		"""
+		this function constructs the series of simulated prices
+		"""
+
+		price_list = []
+		price_list.append(self.cur_price)
+		for t in range(len(self.time_index)):
+			self._next_price(self.cur_price)
+			price_list.append(self.cur_price)
+
+		self.cur_price = float(self.mean_std[self.time_step, 2])  # reset self.cur_price to initial value
+		return np.array(price_list)
+
+	def _mean_price(self):
+		v = sliding_window_view(self.sim_prices, 24)
+		moving_averages = v.mean(axis=-1)
+		num_first_values = self.sim_prices.shape[0] - moving_averages.shape[0]
+		first_values = []
+		for val in range(num_first_values):
+			first_values.append(self.sim_prices[0:val, 0].mean())
+		return np.append(first_values, moving_averages)
+		
 	def _storage_level_change(self, action):
 		""" this function transforms the discrete action into a change in the level of the storage
 		"""
