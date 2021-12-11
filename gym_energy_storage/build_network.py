@@ -15,9 +15,9 @@ class DQN(Model):
 
     def build_model(self):
         input_state = Input(shape=self.state_shape)
-        x = Dense(units=24)(input_state)
+        x = Dense(units=50)(input_state)
         x = Activation("relu")(x)
-        x = Dense(units=24)(x)
+        x = Dense(units=50)(x)
         x = Activation("relu")(x)
         q_value_pred = Dense(self.num_actions)(x)
         model = Model(inputs=input_state, outputs=q_value_pred)

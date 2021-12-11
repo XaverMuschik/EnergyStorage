@@ -64,7 +64,10 @@ class plot_learning_result():
 
         def calc_values(time_step, price, stor_vol):
             observations = np.asarray([time_step, price, stor_vol, self.stor_val, self.mean_price]).reshape(1, -1)
-            return self.model(self.normalize(observations)).numpy()[0]
+            try:
+                return self.model(self.normalize(observations)).numpy()[0]
+            except:
+                return self.model(self.normalize(observations))[0]
 
         # Add cells
         for stor_lev in data.columns:
