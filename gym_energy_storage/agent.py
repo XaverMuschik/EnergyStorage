@@ -37,7 +37,7 @@ class Agent:
         self.actions = len(self.env.action_space)
         self.load_model = load_model
         self.model = self.get_model()
-        self.epsilon = 0.3
+        self.epsilon = 0.10
         self.epsilon_decay = 0.98  # 0.98
 
     def normalize(self, state):
