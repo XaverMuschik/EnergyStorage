@@ -33,8 +33,8 @@ class EnergyStorageEnv(gym.Env):
 		self.penalty = -25
 		self.cur_price = float(self.mean_std[self.time_step, 2])
 		self.sim_prices = self.sim_price()
-		length_window = 4
-		self.mean_prices = self._mean_price(length_window)
+		self.length_window = 4
+		self.mean_prices = self._mean_price(self.length_window)
 
 		# storage specifics
 		self.max_stor_lev = 10  # in MWh
@@ -218,6 +218,7 @@ class EnergyStorageEnv(gym.Env):
 
 		# simulate new prices
 		self.sim_prices = self.sim_price()
+		self.mean_prices = self._mean_price(self.length_window)
 
 		observations = np.array([self.time_step, self.cur_price, self.stor_lev, self.stor_val, self.cur_price])
 		return observations
