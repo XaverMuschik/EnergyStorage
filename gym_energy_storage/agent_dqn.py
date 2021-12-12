@@ -11,7 +11,7 @@ import gym
 import gym_energy_storage
 from gym_energy_storage.plot_learning_outcome import plot_learning_result
 
-MODEL_PATH = os.path.join("../saved_model", "dqn_model.h5")
+MODEL_PATH = os.path.join("saved_model", "dqn_model.h5")
 
 
 class Agent:
@@ -44,7 +44,7 @@ class Agent:
 
     def train(self, num_episodes: int):
         last_rewards: Deque = collections.deque(maxlen=5)
-        best_reward_mean = 0.0
+        best_reward_mean = -750.0
         for episode in range(1, num_episodes + 1):
             total_reward = 0.0
             state = self.env.reset()
@@ -137,6 +137,6 @@ class Agent:
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
     agent = Agent(env)
-    agent.train(num_episodes=200)
+    agent.train(num_episodes=40)
     # input("Play?")
     # agent.play(num_episodes=30, render=True)

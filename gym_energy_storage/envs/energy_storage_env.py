@@ -195,12 +195,12 @@ class EnergyStorageEnv(gym.Env):
 		observations = np.array([self.time_step, self.cur_price, self.stor_lev, self.stor_val, self.mean_prices[self.time_step]])
 
 		if (self.cur_date.year == self.end_date.year) & (self.cur_date.month == self.end_date.month) & (self.cur_date.day == self.end_date.day):
-			drop = True
+			done = True
 		else:
-			drop = False
+			done = False
 			self.cur_date += timedelta(hours=1)
 
-		return observations, reward, drop, action
+		return observations, reward, done, action
 
 	def reset(self):
 
