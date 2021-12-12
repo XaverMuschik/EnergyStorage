@@ -5,6 +5,7 @@ from typing import Deque
 
 import gym
 import numpy as np
+import pandas as pd
 
 from build_network import DQN  # TODO: check if this works
 import gym
@@ -117,6 +118,8 @@ class Agent:
 
     def play(self, num_episodes: int, render: bool = True):
         self.dqn.load_model(MODEL_PATH)
+        cols = ["timestep", "price", "stor_lev", "stor_val", "mean_price", "reward", "action"]
+        df = pd.DataFrame(columns=cols)
         for episode in range(1, num_episodes + 1):
             total_reward = 0.0
             state = self.env.reset()
@@ -129,14 +132,19 @@ class Agent:
                 next_state = np.reshape(next_state, newshape=(1, -1)).astype(np.float32)
                 total_reward += reward
                 state = next_state
+                # capture state, reward, action here
+                df_episode = pd.DataFrame(np.reshape(np.append(state, [reward, action]), newshape=(1,-1)), columns=cols)
+                df = pd.concat([df, df_episode])
                 if done:
                     print(f"Episode: {episode} Reward: {total_reward}")
+                    file = f"executed_strategy/run_{episode}.csv"
+                    df.to_csv(file)
                     break
 
 
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
     agent = Agent(env)
-    agent.train(num_episodes=40)
+    # agent.train(num_episodes=40)
     # input("Play?")
-    # agent.play(num_episodes=30, render=True)
+    agent.play(num_episodes=30, render=True)
