@@ -48,7 +48,7 @@ class Agent:
         best_reward_mean = -750.0
         for episode in range(1, num_episodes + 1):
             total_reward = 0.0
-            state = self.env.reset()
+            state = self.env.reset(True)
             state = np.reshape(state, newshape=(1, -1)).astype(np.float32)
             while True:
                 action = self.get_action(state)
@@ -56,6 +56,9 @@ class Agent:
                 next_state = np.reshape(next_state, newshape=(1, -1)).astype(np.float32)
                 self.remember(state, action, reward, next_state, done)
                 self.replay()
+                # set reward to zero if action is constant
+                if action == 2:
+                    reward = 0
                 total_reward += reward
                 state = next_state
                 if done:
@@ -122,19 +125,23 @@ class Agent:
         df = pd.DataFrame(columns=cols)
         for episode in range(1, num_episodes + 1):
             total_reward = 0.0
-            state = self.env.reset()
+            state = self.env.reset(False)
             state = np.reshape(state, newshape=(1, -1)).astype(np.float32)
             while True:
                 if render:
                     self.env.render()
                 action = self.get_action(state)
                 next_state, reward, done, action = self.env.step(action)
+                # set reward to zero for a constant action
+                if action == 2:
+                    reward = 0
                 next_state = np.reshape(next_state, newshape=(1, -1)).astype(np.float32)
                 total_reward += reward
-                state = next_state
                 # capture state, reward, action here
                 df_episode = pd.DataFrame(np.reshape(np.append(state, [reward, action]), newshape=(1,-1)), columns=cols)
                 df = pd.concat([df, df_episode])
+                # finally, update state
+                state = next_state
                 if done:
                     print(f"Episode: {episode} Reward: {total_reward}")
                     file = f"executed_strategy/run_{episode}.csv"

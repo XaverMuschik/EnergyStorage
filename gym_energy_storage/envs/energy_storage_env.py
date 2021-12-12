@@ -202,10 +202,11 @@ class EnergyStorageEnv(gym.Env):
 
 		return observations, reward, done, action
 
-	def reset(self):
+	def reset(self, seed = False):
 
 		# set random seed
-		np.random.seed(1304)
+		if seed:
+			np.random.seed(1304)
 
 		# reset cur_date to start_date
 		self.cur_date = self.start_date
