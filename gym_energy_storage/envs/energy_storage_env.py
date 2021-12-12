@@ -21,6 +21,7 @@ class EnergyStorageEnv(gym.Env):
 
 	def __init__(self):
 
+		np.random.seed(1304)
 		self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
 		self.cur_date = self.start_date  # keep track of current date
 		self.time_step = 0  # variable used for slicing mean and var values
@@ -202,6 +203,9 @@ class EnergyStorageEnv(gym.Env):
 		return observations, reward, drop, action
 
 	def reset(self):
+
+		# set random seed
+		np.random.seed(1304)
 
 		# reset cur_date to start_date
 		self.cur_date = self.start_date
