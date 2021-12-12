@@ -16,13 +16,13 @@ MODEL_PATH = os.path.join("saved_model", "dqn_model.h5")
 
 
 class Agent:
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: gym.Env, load_model: bool):
         # DQN Env Variables
         self.env = env
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
         # DQN Agent Variables
-        self.replay_buffer_size = 10_000  # ToDo: tune hyperparameter
+        self.replay_buffer_size = 20_000  # ToDo: tune hyperparameter
         self.train_start = 1_000  # ToDo: tune hyperparameter
         self.memory: Deque = collections.deque(maxlen=self.replay_buffer_size)
         self.gamma = 1  # 0.95
@@ -33,6 +33,8 @@ class Agent:
         self.state_shape = self.observations
         self.learning_rate = 1e-3
         self.dqn = DQN(self.state_shape, self.actions, self.learning_rate)
+        if load_model:
+            self.dqn.load_model(MODEL_PATH)
         self.target_dqn = DQN(self.state_shape, self.actions, self.learning_rate)
         self.target_dqn.update_model(self.dqn)
         self.batch_size = 128
@@ -48,7 +50,7 @@ class Agent:
         best_reward_mean = -750.0
         for episode in range(1, num_episodes + 1):
             total_reward = 0.0
-            state = self.env.reset(True)
+            state = self.env.reset(seed=True)
             state = np.reshape(state, newshape=(1, -1)).astype(np.float32)
             while True:
                 action = self.get_action(state)
@@ -121,11 +123,11 @@ class Agent:
 
     def play(self, num_episodes: int, render: bool = True):
         self.dqn.load_model(MODEL_PATH)
-        cols = ["timestep", "price", "stor_lev", "stor_val", "mean_price", "reward", "action"]
-        df = pd.DataFrame(columns=cols)
         for episode in range(1, num_episodes + 1):
+            cols = ["timestep", "price", "stor_lev", "stor_val", "mean_price", "reward", "action"]
+            df = pd.DataFrame(columns=cols)
             total_reward = 0.0
-            state = self.env.reset(False)
+            state = self.env.reset(seed=False)
             state = np.reshape(state, newshape=(1, -1)).astype(np.float32)
             while True:
                 if render:
@@ -138,8 +140,9 @@ class Agent:
                 next_state = np.reshape(next_state, newshape=(1, -1)).astype(np.float32)
                 total_reward += reward
                 # capture state, reward, action here
-                df_episode = pd.DataFrame(np.reshape(np.append(state, [reward, action]), newshape=(1,-1)), columns=cols)
-                df = pd.concat([df, df_episode])
+                # cols = ["timestep", "price", "stor_lev", "stor_val", "mean_price", "reward", "action"]
+                df_timestep = pd.DataFrame(np.reshape(np.append(state, [reward, action]), newshape=(1,-1)), columns=cols)
+                df = pd.concat([df, df_timestep])
                 # finally, update state
                 state = next_state
                 if done:
@@ -152,6 +155,6 @@ class Agent:
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
     agent = Agent(env)
-    # agent.train(num_episodes=40)
+    agent.train(num_episodes=100)
     # input("Play?")
-    agent.play(num_episodes=30, render=True)
+    # agent.play(num_episodes=30, render=True)

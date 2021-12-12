@@ -25,7 +25,7 @@ class EnergyStorageEnv(gym.Env):
 		self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
 		self.cur_date = self.start_date  # keep track of current date
 		self.time_step = 0  # variable used for slicing mean and var values
-		self.end_date = datetime.fromisoformat("2015-06-02")
+		self.end_date = datetime.fromisoformat("2015-07-01")
 		self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
 		self.len_period = len(self.time_index)
 		self._get_spot_price_params()  # might be necessary to specify path here?
