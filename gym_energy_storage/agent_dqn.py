@@ -22,7 +22,7 @@ class Agent:
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
         # DQN Agent Variables
-        self.replay_buffer_size = 20_000  # ToDo: tune hyperparameter
+        self.replay_buffer_size = 10_000  # ToDo: tune hyperparameter
         self.train_start = 1_000  # ToDo: tune hyperparameter
         self.memory: Deque = collections.deque(maxlen=self.replay_buffer_size)
         self.gamma = 1  # 0.95
@@ -57,13 +57,14 @@ class Agent:
                 next_state, reward, done, action = self.env.step(action)  # ToDo: negativer reward, wenn action out of bounds (in env aendern)
                 next_state = np.reshape(next_state, newshape=(1, -1)).astype(np.float32)
                 self.remember(state, action, reward, next_state, done)
-                self.replay()
+                # self.replay() # Mind: I switched the replay with the training function after the episode is done!!!
                 # set reward to zero if action is constant
                 if action == 2:
                     reward = 0
                 total_reward += reward
                 state = next_state
                 if done:
+                    self.replay()
                     self.target_dqn.update_model(self.dqn)  # target dqn weights are updated
                     print(f"Episode: {episode} Reward: {total_reward} Epsilon: {self.epsilon}")
                     last_rewards.append(total_reward)
@@ -76,8 +77,7 @@ class Agent:
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+
 
     def normalize(self, state):
         """ normalizes observations to interval [0,1] """
@@ -115,6 +115,9 @@ class Agent:
 
         self.dqn.fit(self.normalize(states), q_values)
         self.plot()
+
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
 
     def plot(self):
         """ plot result of training"""
@@ -154,7 +157,7 @@ class Agent:
 
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
-    agent = Agent(env)
-    agent.train(num_episodes=100)
+    agent = Agent(env, load_model=True)
+    agent.train(num_episodes=50)
     # input("Play?")
     # agent.play(num_episodes=30, render=True)
