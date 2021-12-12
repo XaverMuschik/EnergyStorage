@@ -12,8 +12,8 @@ import gym
 import gym_energy_storage
 from gym_energy_storage.plot_learning_outcome import plot_learning_result
 
-MODEL_PATH = os.path.join("saved_model", "dqn_model.h5")
-
+MODEL_BEST_PATH = os.path.join("saved_model", "dqn_model.h5")
+MODEL_LAST_PATH = os.path.join("saved_model", "dqn_model_last.h5")
 
 class Agent:
     def __init__(self, env: gym.Env, load_model: bool):
@@ -28,13 +28,13 @@ class Agent:
         self.gamma = 1  # 0.95
         self.epsilon = 1.0
         self.epsilon_min = 0.05
-        self.epsilon_decay = 0.999
+        self.epsilon_decay = 0.99
         # DQN Network Variables
         self.state_shape = self.observations
         self.learning_rate = 1e-3
         self.dqn = DQN(self.state_shape, self.actions, self.learning_rate)
         if load_model:
-            self.dqn.load_model(MODEL_PATH)
+            self.dqn.load_model(MODEL_LAST_PATH)
         self.target_dqn = DQN(self.state_shape, self.actions, self.learning_rate)
         self.target_dqn.update_model(self.dqn)
         self.batch_size = 128
@@ -50,7 +50,7 @@ class Agent:
         best_reward_mean = -750.0
         for episode in range(1, num_episodes + 1):
             total_reward = 0.0
-            state = self.env.reset(seed=True)
+            state = self.env.reset(seed=False)
             state = np.reshape(state, newshape=(1, -1)).astype(np.float32)
             while True:
                 action = self.get_action(state)
@@ -71,9 +71,10 @@ class Agent:
                     current_reward_mean = np.mean(last_rewards)
                     if current_reward_mean > best_reward_mean:
                         best_reward_mean = current_reward_mean
-                        self.dqn.save_model(MODEL_PATH)
+                        self.dqn.save_model(MODEL_BEST_PATH)
                         print(f"New best mean: {best_reward_mean}")
                     break
+        self.dqn.save_model(MODEL_LAST_PATH)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -125,7 +126,10 @@ class Agent:
         plot.main()
 
     def play(self, num_episodes: int, render: bool = True):
-        self.dqn.load_model(MODEL_PATH)
+        self.epsilon = self.epsilon_min
+        # self.dqn.load_model(MODEL_LAST_PATH)
+        self.dqn.load_model(MODEL_BEST_PATH)
+        average_reward = []
         for episode in range(1, num_episodes + 1):
             cols = ["timestep", "price", "stor_lev", "stor_val", "mean_price", "reward", "action"]
             df = pd.DataFrame(columns=cols)
@@ -152,12 +156,15 @@ class Agent:
                     print(f"Episode: {episode} Reward: {total_reward}")
                     file = f"executed_strategy/run_{episode}.csv"
                     df.to_csv(file)
+                    average_reward.append(total_reward)
                     break
+        average_reward = np.mean(np.array(average_reward))
+        print(f"Average Reward over all episodes: {average_reward}")
 
 
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
     agent = Agent(env, load_model=True)
-    agent.train(num_episodes=50)
+    # agent.train(num_episodes=1000)
     # input("Play?")
-    # agent.play(num_episodes=30, render=True)
+    agent.play(num_episodes=100, render=True)
