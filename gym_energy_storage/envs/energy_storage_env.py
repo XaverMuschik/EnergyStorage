@@ -21,7 +21,7 @@ class EnergyStorageEnv(gym.Env):
 
 	def __init__(self):
 
-		np.random.seed(1304)
+		np.random.seed(1405)
 		self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
 		self.cur_date = self.start_date  # keep track of current date
 		self.time_step = 0  # variable used for slicing mean and var values
@@ -162,6 +162,8 @@ class EnergyStorageEnv(gym.Env):
 		"""
 		if num_action > 0.0:
 			self.stor_val = (self.stor_val * self.stor_lev + num_action * self.stor_eff * self.cur_price) / (self.stor_lev + num_action * self.stor_eff)
+		if abs(self.stor_lev) < 0.01:
+			self.stor_val = 0.0
 
 	def step(self, action):
 
