@@ -22,23 +22,23 @@ class Agent:
         self.observations = self.env.observation_space
         self.actions = len(self.env.action_space)
         # DQN Agent Variables
-        self.replay_buffer_size = 5_000  # ToDo: tune hyperparameter
+        self.replay_buffer_size = 2_000  # ToDo: tune hyperparameter
         self.train_start = 1_000  # ToDo: tune hyperparameter
         self.memory: Deque = collections.deque(maxlen=self.replay_buffer_size)
         self.gamma = 1  # 0.95
         self.epsilon = 1.0
         self.epsilon_min = 0.05
-        self.epsilon_decay = 0.999
+        self.epsilon_decay = 0.99
         # DQN Network Variables
         self.state_shape = self.observations
-        self.learning_rate = 5e-4
+        self.learning_rate = 1e-6
         self.dqn = DQN(self.state_shape, self.actions, self.learning_rate)
         if load_model:
             # self.dqn.load_model(MODEL_LAST_PATH)
             self.dqn.load_model(MODEL_BEST_PATH)
         self.target_dqn = DQN(self.state_shape, self.actions, self.learning_rate)
         self.target_dqn.update_model(self.dqn)
-        self.batch_size = 256
+        self.batch_size = 32
 
     def get_action(self, state: np.ndarray):
         if np.random.rand() <= self.epsilon:
@@ -48,10 +48,10 @@ class Agent:
 
     def train(self, num_episodes: int):
         last_rewards: Deque = collections.deque(maxlen=5)
-        best_reward_mean = -750.0
+        best_reward_mean = 0.0
         for episode in range(1, num_episodes + 1):
             total_reward = 0.0
-            state = self.env.reset(seed=False)
+            state = self.env.reset(seed=True)
             state = np.reshape(state, newshape=(1, -1)).astype(np.float32)
             while True:
                 action = self.get_action(state)
@@ -165,7 +165,7 @@ class Agent:
 
 if __name__ == "__main__":
     env = gym.make('energy_storage-v0')
-    agent = Agent(env, load_model=False)
-    agent.train(num_episodes=500)
+    agent = Agent(env, load_model=True)
+    agent.train(num_episodes=100)
     # input("Play?")
-    # agent.play(num_episodes=100, render=True)
+    # agent.play(num_episodes=50, render=True)
