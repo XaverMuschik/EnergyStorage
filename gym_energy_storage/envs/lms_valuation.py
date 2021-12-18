@@ -160,13 +160,13 @@ class storageValLSM():
             max_in = self.max_in
 
         if vol_level + self.max_wd < 0.0:
-            max_wd = vol_level
+            max_wd = - vol_level
         else:
             max_wd = self.max_wd
 
         best_action = np.repeat(max_wd, len(S_t))
-        value = np.repeat(0.0, len(S_t))
-        payoff = np.repeat(0.0, len(S_t))
+        value = np.repeat(-1e10, len(S_t))
+        payoff = np.repeat(0, len(S_t))
 
         # for action in range(max_wd, max_in, self.grid_size):
         action = max_wd
