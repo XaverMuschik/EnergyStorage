@@ -27,15 +27,15 @@ class storageValLSM():
         self.time_index = pd.Series(pd.date_range(start=self.start_date, end=self.end_date, freq="H"))
         self.time_steps = len(self.time_index)
 
-        self.acc_payoff = np.zeros((self.time_steps, self.grid_steps, self.number_price_paths))
+        self.acc_payoff = np.zeros(((self.time_steps+1), self.grid_steps, self.number_price_paths))
 
-        self.payoff_per_period = np.zeros((self.time_steps, self.grid_steps, self.number_price_paths))
-        self.best_actions_per_period = np.zeros((self.time_steps, self.grid_steps, self.number_price_paths))
+        self.payoff_per_period = np.zeros(((self.time_steps+1), self.grid_steps, self.number_price_paths))
+        self.best_actions_per_period = np.zeros(((self.time_steps+1), self.grid_steps, self.number_price_paths))
 
         # simulate prices
         self._get_spot_price_params()
         self.cur_price = float(self.mean_std[0, 2])
-        self.prices = np.zeros((self.time_steps, self.number_price_paths))
+        self.prices = np.zeros((self.time_steps+1, self.number_price_paths))
         self.sim_prices()
         print("initializatin finished")
 
@@ -113,7 +113,7 @@ class storageValLSM():
 
         price_list = []
         price_list.append(self.cur_price)
-        for t in range(len(self.time_index)-1):
+        for t in range(len(self.time_index)):
             self._next_price(self.cur_price)
             price_list.append(self.cur_price)
 
@@ -130,14 +130,14 @@ class storageValLSM():
         Y_t1: vector of accumulated cash flows in t1 (for each price path)
         S_t1: vector of spot prices in t1 (for each price path)
         """
-        model = np.polyfit(S_t1, Y_t1, 3)
+        model_coefs = np.polyfit(S_t1, Y_t1, 3)
 
-        return model
+        return model_coefs
 
-    def _predict_cont_val(self, S_t1, model):
+    def _predict_cont_val(self, S_t1, model_coefs):
         """ predicts the continuation value for a given volume level and spot price """
 
-        return np.polynomial(model, S_t1)
+        return np.polyval(model_coefs, S_t1)
         # ToDo: check if this yiels expected result
 
     def _identify_best_action(self, vol_level, S_t, C_t):
@@ -208,17 +208,17 @@ class storageValLSM():
             while vol < self.max_stor:
 
                 # 1. regression for prediction of cont values based on current prices and accumulated CFs
-                model = self._regress_cont_val(self.acc_payoff[time, vol_index, :], self.sim_prices[time, :])
+                model = self._regress_cont_val(self.acc_payoff[time, vol_index, :], self.prices[time, :])
 
                 # 2. predict continuation values
-                continuation_values = self._predict_cont_val(self.sim_prices[time, :], model)
+                continuation_values = self._predict_cont_val(self.prices[time, :], model)
 
                 # 3. identify best action and corresponding cash flow
 
-                payoff, best_action = self._identify_best_action(vol, self.sim_price[time, :], continuation_values)
+                payoff, best_action = self._identify_best_action(vol, self.prices[time, :], continuation_values)
 
                 # 4. update matrix containing accumulated cash flows
-                self._update_accumulated_cash_flows(time, vol, payoff, best_action)
+                self._update_accumulated_cash_flows(time, vol_index, payoff, best_action)
 
                 # 5. store best action and payoff for model evaluation
                 self.payoff_per_period[time, vol_index, :] = payoff
