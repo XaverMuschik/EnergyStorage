@@ -17,7 +17,7 @@ class storageValLSM():
         self.max_stor = 10.0
         self.min_stor = 0.0
         self.grid_size = 0.5  # step size of volume grid
-        self.grid_steps = int((self.max_stor - self.min_stor) / self.grid_size)
+        self.grid_steps = int((self.max_stor - self.min_stor) / self.grid_size) + 1  # add one to include zero and maximum
         self.number_price_paths = 10
 
         self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
@@ -170,16 +170,16 @@ class storageValLSM():
 
         # for action in range(max_wd, max_in, self.grid_size):
         action = max_wd
-        while action < max_in:
+        while action <= max_in:
 
-            value_new = C_t + action * S_t
-            payoff_new = action * S_t
+            value_new = C_t - action * S_t
+            payoff_new = - action * S_t
 
             # update value
             value[value_new > value] = value_new[value_new > value]  # ToDo: debug whether or not this works!
 
             # update best action
-            best_action[value_new > value] = np.repeat(action, len(S_t))[value_new > value]
+            best_action[value_new > value] = action  # np.repeat(action, len(S_t))[value_new > value]
 
             # update payoff
             payoff[value_new > value] = payoff_new[value_new > value]
@@ -214,7 +214,7 @@ class storageValLSM():
             # for vol in range(self.max_stor, self.min_stor, self.grid_size):
             vol = self.min_stor
             vol_index = 0
-            while vol < self.max_stor:
+            while vol <= self.max_stor:
 
                 # 1. regression for prediction of cont values based on current prices and accumulated CFs
                 model = self._regress_cont_val(self.acc_payoff[time, vol_index, :], self.prices[time, :])
