@@ -12,7 +12,7 @@ class storageValLSM():
 
         np.random.seed(1405)
 
-        self.max_wd = 2.0
+        self.max_wd = -2.0
         self.max_in = 1.0
         self.max_stor = 10.0
         self.min_stor = 0.0
@@ -156,16 +156,22 @@ class storageValLSM():
         # determine action space
         if vol_level + self.max_in > self.max_stor:
             max_in = self.max_stor - vol_level
+        else:
+            max_in = self.max_in
 
         if vol_level + self.max_wd < 0.0:
             max_wd = vol_level
+        else:
+            max_wd = self.max_wd
 
         best_action = np.repeat(max_wd, len(S_t))
         value = np.repeat(0.0, len(S_t))
         payoff = np.repeat(0.0, len(S_t))
 
-        for action in range(start=max_wd, stop=max_in, step=self.grid_size):
-            # todo: check if stop needs to be greater than max_in in oder to prevent early stopping
+        # for action in range(max_wd, max_in, self.grid_size):
+        action = max_wd
+        while action < max_in:
+
             value_new = C_t + action * S_t
             payoff_new = action * S_t
 
@@ -173,10 +179,13 @@ class storageValLSM():
             value[value_new > value] = value_new[value_new > value]  # ToDo: debug whether or not this works!
 
             # update best action
-            best_action[value_new > value] = np.repeat(action, len(S_t))
+            best_action[value_new > value] = np.repeat(action, len(S_t))[value_new > value]
 
             # update payoff
             payoff[value_new > value] = payoff_new[value_new > value]
+
+            # increase action for next iteration
+            action += self.grid_size
 
         return payoff, best_action
 
@@ -195,11 +204,11 @@ class storageValLSM():
             acc_payoff_next_period = self.acc_payoff[(timestep + 1), (vol_index + vol_index_change), path]
 
             # update the acc_cf for time, volume, path
-            self.acc_payoff[timestep, volume_index, path] = payoff[path] + acc_payoff_next_period
+            self.acc_payoff[timestep, vol_index, path] = payoff[path] + acc_payoff_next_period
 
     def backwards_iteration(self):
 
-        for time in range(self.time_steps, 0, -1):
+        for time in range(self.time_steps-1, 0, -1):
             # todo: check if one period needs to be added for penalty period!
 
             # for vol in range(self.max_stor, self.min_stor, self.grid_size):
@@ -228,7 +237,8 @@ class storageValLSM():
                 vol += self.grid_size
                 vol_index += 1
 
-        self.storage_value = np.mean(self.acc_payoff[1, self.min_stor, :])
+        self.storage_value = np.mean(self.acc_payoff[1, 0, :])
+        print(f"Storage value: {self.storage_value}")
         return self.storage_value
 
 
