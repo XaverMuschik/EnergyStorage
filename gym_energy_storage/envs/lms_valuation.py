@@ -180,7 +180,7 @@ class storageValLSM():
 
         return payoff, best_action
 
-    def _update_accumulated_cash_flows(self, timestep, vol_level, payoff, best_action):
+    def _update_accumulated_cash_flows(self, timestep, vol_index, payoff, best_action):
 
         """
         this function updates the accumulated cash flows of a given period for a given storage level
@@ -189,23 +189,26 @@ class storageValLSM():
         # ToDo: acc_payoff needs to be class attribute!
         # this function does not work in a vectorized fashion :(
 
-        for path in range(len(payoff)):
+        for path in range(self.number_price_paths):
             # get next periods accumulated cf based on best action
-            acc_payoff_next_period = self.acc_payoff[(timestep + 1), (vol_level + best_action[path], path)]
+            vol_index_change = int(best_action[path] / self.grid_size)
+            acc_payoff_next_period = self.acc_payoff[(timestep + 1), (vol_index + vol_index_change), path]
 
             # update the acc_cf for time, volume, path
-            self.acc_payoff[time, volume, path] = payoff[path] + acc_payoff_next_period
+            self.acc_payoff[timestep, volume_index, path] = payoff[path] + acc_payoff_next_period
 
     def backwards_iteration(self):
 
-        for time in range(self.time, 0, -1):
+        for time in range(self.time_steps, 0, -1):
             # todo: check if one period needs to be added for penalty period!
 
-            for vol in range(self.max_stor, self.min_stor, self.grid_size):
-                # todo: check if iteration works as expected and if all relevant levels are included!!
+            # for vol in range(self.max_stor, self.min_stor, self.grid_size):
+            vol = self.min_stor
+            vol_index = 0
+            while vol < self.max_stor:
 
                 # 1. regression for prediction of cont values based on current prices and accumulated CFs
-                model = self._regress_cont_val(self.acc_payoff[time, vol, :], self.sim_prices[time, :])
+                model = self._regress_cont_val(self.acc_payoff[time, vol_index, :], self.sim_prices[time, :])
 
                 # 2. predict continuation values
                 continuation_values = self._predict_cont_val(self.sim_prices[time, :], model)
@@ -215,11 +218,15 @@ class storageValLSM():
                 payoff, best_action = self._identify_best_action(vol, self.sim_price[time, :], continuation_values)
 
                 # 4. update matrix containing accumulated cash flows
-                self._update_accumulated_cash_flows(self, timestep, vol_level, payoff, best_action)
+                self._update_accumulated_cash_flows(time, vol, payoff, best_action)
 
                 # 5. store best action and payoff for model evaluation
-                self.payoff_per_period[time, vol, :] = payoff
-                self.best_actions_per_period[time, vol, :] = best_action
+                self.payoff_per_period[time, vol_index, :] = payoff
+                self.best_actions_per_period[time, vol_index, :] = best_action
+
+                # increase volume for next iteration
+                vol += self.grid_size
+                vol_index += 1
 
         self.storage_value = np.mean(self.acc_payoff[1, self.min_stor, :])
         return self.storage_value
@@ -227,3 +234,4 @@ class storageValLSM():
 
 if __name__ == "__main__":
     test = storageValLSM()
+    test.backwards_iteration()
