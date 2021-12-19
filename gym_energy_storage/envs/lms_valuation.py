@@ -18,7 +18,7 @@ class storageValLSM():
         self.min_stor = 0.0
         self.grid_size = 0.5  # step size of volume grid
         self.grid_steps = int((self.max_stor - self.min_stor) / self.grid_size) + 1  # add one to include zero and maximum
-        self.number_price_paths = 10
+        self.number_price_paths = 50
 
         self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
         self.cur_date = self.start_date  # keep track of current date
@@ -166,23 +166,28 @@ class storageValLSM():
 
         best_action = np.repeat(max_wd, len(S_t))
         value = np.repeat(-1e10, len(S_t))
-        payoff = np.repeat(0, len(S_t))
+        payoff = np.repeat(0.0, len(S_t))
 
         # for action in range(max_wd, max_in, self.grid_size):
+        vol_index = vol_level / self.grid_size
         action = max_wd
         while action <= max_in:
 
-            value_new = C_t - action * S_t
-            payoff_new = - action * S_t
+            # determine how much each action adds to the vol_index
+            action_index = action / self.grid_size
+            vol_index_new = vol_index + action_index
 
-            # update value
-            value[value_new > value] = value_new[value_new > value]  # ToDo: debug whether or not this works!
+            value_new = C_t[vol_index_new,:] - action * S_t
+            payoff_new = - action * S_t
 
             # update best action
             best_action[value_new > value] = action  # np.repeat(action, len(S_t))[value_new > value]
 
             # update payoff
             payoff[value_new > value] = payoff_new[value_new > value]
+
+            # update value
+            value[value_new > value] = value_new[value_new > value]  # ToDo: debug whether or not this works!
 
             # increase action for next iteration
             action += self.grid_size
@@ -209,21 +214,31 @@ class storageValLSM():
     def backwards_iteration(self):
 
         for time in range(self.time_steps-1, 0, -1):
-            # todo: check if one period needs to be added for penalty period!
 
-            # for vol in range(self.max_stor, self.min_stor, self.grid_size):
+            # loop over volume index per timestep to generate continuation values for the volume grid
+            vol = self.min_stor
+            vol_index = 0
+            continuation_values = np.zeros((self.grid_steps, self.number_price_paths))
+            while vol <= self.max_stor:
+
+                # 1. regression for prediction of cont values based on current prices and accumulated CFs
+                model = self._regress_cont_val(self.acc_payoff[time+1, vol_index, :], self.prices[time+1, :])
+
+                # 2. predict continuation values
+                continuation_values[vol_index,:] = self._predict_cont_val(self.prices[time, :], model)
+
+                # increase volume for next iteration
+                vol += self.grid_size
+                vol_index += 1
+
+            # using the continuation values-grid, identify best action and derive payoffs
             vol = self.min_stor
             vol_index = 0
             while vol <= self.max_stor:
 
-                # 1. regression for prediction of cont values based on current prices and accumulated CFs
-                model = self._regress_cont_val(self.acc_payoff[time, vol_index, :], self.prices[time, :])
-
-                # 2. predict continuation values
-                continuation_values = self._predict_cont_val(self.prices[time, :], model)
-
                 # 3. identify best action and corresponding cash flow
-
+                    ## ToDo: continuation values for each resulting volume level need to be provided to identify best action
+                    ## (otherwise, max withdrawal is always best!!!)
                 payoff, best_action = self._identify_best_action(vol, self.prices[time, :], continuation_values)
 
                 # 4. update matrix containing accumulated cash flows
