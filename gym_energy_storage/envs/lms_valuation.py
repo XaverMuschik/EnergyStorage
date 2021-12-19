@@ -4,6 +4,8 @@ import json
 import pandas as pd
 from datetime import datetime
 from datetime import timedelta
+import matplotlib.pyplot as plt
+import time
 
 
 class storageValLSM():
@@ -18,7 +20,7 @@ class storageValLSM():
         self.min_stor = 0.0
         self.grid_size = 0.5  # step size of volume grid
         self.grid_steps = int((self.max_stor - self.min_stor) / self.grid_size) + 1  # add one to include zero and maximum
-        self.number_price_paths = 50
+        self.number_price_paths = 5000
 
         self.start_date = datetime.fromisoformat("2015-06-01")  # relevant for price simulation
         self.cur_date = self.start_date  # keep track of current date
@@ -175,7 +177,7 @@ class storageValLSM():
 
             # determine how much each action adds to the vol_index
             action_index = action / self.grid_size
-            vol_index_new = vol_index + action_index
+            vol_index_new = int(vol_index + action_index)
 
             value_new = C_t[vol_index_new,:] - action * S_t
             payoff_new = - action * S_t
@@ -254,6 +256,16 @@ class storageValLSM():
 
         self.storage_value = np.mean(self.acc_payoff[1, 0, :])
         print(f"Storage value: {self.storage_value}")
+
+        # plot distribution of storage values
+        fig = plt.hist(self.acc_payoff[1, 0, :])
+        plt.title('Distribution of storage values')
+        plt.xlabel("value")
+        plt.ylabel("Frequency")
+        name = "lsm_distribution_values" + ".png"
+        file = os.path.join("..", "Figures_Outcome_Learning", name)
+        plt.savefig(file)
+
         return self.storage_value
 
 
